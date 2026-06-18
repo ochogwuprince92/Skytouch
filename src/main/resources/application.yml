@@ -1,8 +1,7 @@
-
 server:
   port: ${PORT:8083}
 
-  spring:
+spring:
   application:
     name: Skytouch
   profiles:
