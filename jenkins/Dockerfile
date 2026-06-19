@@ -1,0 +1,13 @@
+FROM jenkins/jenkins:lts
+
+USER root
+
+RUN apt-get update && \
+    apt-get install -y openjdk-21-jdk podman git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+ENV CONTAINER_HOST=unix:///var/run/podman.sock
+
+USER jenkins

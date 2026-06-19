@@ -1,45 +1,90 @@
 spring:
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/skytouch_db
-    username: postgres
-    password: newpassword
+
+    url: ${DATASOURCE_URL}
+
+    username: ${DATASOURCE_USERNAME}
+
+    password: ${DATASOURCE_PASSWORD}
+
     driver-class-name: org.postgresql.Driver
+
     hikari:
+
       maximum-pool-size: 2
 
+
+
   jpa:
+
     hibernate:
+
       ddl-auto: update
+
     show-sql: true
+
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
+
+
   flyway:
+
     enabled: true
+
     baseline-on-migrate: true
+
     baseline-version: 0
+
     locations: classpath:db/migration
 
+
+
   mail:
-    username: ochogwuprince@gmail.com
-    password: hmrxhxvcvksxapql
+
+    username: ${MAIL_USERNAME}
+
+    password: ${MAIL_PASSWORD}
+
+
 
 app:
+
   jwt:
-    secret: mySecretKeyForJWTTokenGenerationAndValidationPurposeOnly123456789012
+
+    secret: ${JWT_SECRET}
+
   frontend:
-    url: http://localhost:4174
+
+    url: ${APP_FRONTEND_URL}
+
+
 
 logging:
+
   level:
+
     org:
+
       flywaydb: DEBUG
+
       springframework:
+
         security: DEBUG
+
       hibernate:
+
         orm:
+
           jdbc:
+
             bind: TRACE
+
     com:
-      market:
+
+      skytech:
+
         config: DEBUG
+
         root: INFO
+
