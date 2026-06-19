@@ -9,5 +9,3 @@ RUN apt-get update && \
 
 ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 ENV CONTAINER_HOST=unix:///var/run/podman.sock
-
-USER jenkins
