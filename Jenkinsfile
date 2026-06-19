@@ -4,12 +4,12 @@ pipeline {
     environment {
         CONTAINER_HOST = 'unix:///var/run/podman.sock'
         SPRING_PROFILES_ACTIVE = 'test'
-        DATASOURCE_URL = 'jdbc:postgresql://postgres-ci:5432/skytouch_db'
-        DATASOURCE_USERNAME = 'postgres'
-        DATASOURCE_PASSWORD = 'postgres'
-        JWT_SECRET = 'test-jwt-secret-for-ci-only-must-be-long-enough'
-        MAIL_USERNAME = 'test@example.com'
-        MAIL_PASSWORD = 'test'
+        DATASOURCE_URL = "jdbc:postgresql://postgres-ci:5432/${env.POSTGRES_DB}"
+        DATASOURCE_USERNAME = "${env.POSTGRES_USER}"
+        DATASOURCE_PASSWORD = "${env.POSTGRES_PASSWORD}"
+        JWT_SECRET = "${env.JWT_SECRET}"
+        MAIL_USERNAME = "${env.MAIL_USERNAME}"
+        MAIL_PASSWORD = "${env.MAIL_PASSWORD}"
         APP_FRONTEND_URL = 'http://localhost:4174'
         DOCKER_IMAGE = "${env.DOCKER_REGISTRY ?: ''}${env.DOCKER_REGISTRY ? '/' : ''}${env.DOCKER_IMAGE_NAME ?: 'skytouch-app'}"
     }
@@ -18,6 +18,7 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '20'))
         timeout(time: 30, unit: 'MINUTES')
         timestamps()
+        skipDefaultCheckout(true)
     }
 
     triggers {
