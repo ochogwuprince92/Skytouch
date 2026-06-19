@@ -163,8 +163,12 @@ From the `Skytouch` folder:
 
 ```powershell
 cd C:\Users\Staff\Downloads\skytouch_project\Skytouch
+copy .env.jenkins.example .env.jenkins
+# Edit .env.jenkins — set POSTGRES_PASSWORD and JWT_SECRET (CI-only values)
 podman compose -f docker-compose.jenkins.yml up --build -d
 ```
+
+> `.env.jenkins` is gitignored. Never commit real credentials. Use disposable values for local CI only.
 
 Open **http://localhost:8080**
 
@@ -195,8 +199,7 @@ podman compose -f docker-compose.jenkins.yml down
 | Stage | Description |
 |-------|-------------|
 | Checkout | Pulls source code |
-| Start Postgres | `podman compose -f docker-compose.ci.yml up` |
-| Test | `./mvnw clean test` |
+| Test | `./mvnw clean test` (uses `postgres-ci` + env from `.env.jenkins`) |
 | Package | Builds JAR |
 | Build Image | `podman build` |
 | Push Image | `main` / `dev` / `v*` tags only |
