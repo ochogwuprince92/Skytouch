@@ -49,13 +49,9 @@ spring:
 
 
 app:
-
-  jwt:
-
-    secret: ${JWT_SECRET}
-
+  auth:
+    email-from: ${APP_EMAIL_FROM:noreply@skytouch.com}
   frontend:
-
     url: ${APP_FRONTEND_URL}
 
 

@@ -1,5 +1,6 @@
 package com.backend.Skytouch.jobseeker.service;
 
+import com.backend.Skytouch.authentication.service.EmailVerificationService;
 import com.backend.Skytouch.common.enums.UserRole;
 import com.backend.Skytouch.common.enums.UserStatus;
 import com.backend.Skytouch.common.exception.BadRequestException;
@@ -9,10 +10,12 @@ import com.backend.Skytouch.common.mapper.JobSeekerMapper;
 import com.backend.Skytouch.common.utils.StringUtils;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerResponse;
 import com.backend.Skytouch.jobseeker.apimodel.RegisterJobSeekerRequest;
+import com.backend.Skytouch.jobseeker.apimodel.RegisterJobSeekerResponse;
 import com.backend.Skytouch.jobseeker.repository.JobSeekerRepository;
 import com.backend.Skytouch.user.entity.Users;
 import com.backend.Skytouch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +31,8 @@ public class JobSeekerService {
     private final JobSeekerRepository jobSeekerRepository;
     private final UserRepository userRepository;
     private final JobSeekerMapper jobSeekerMapper;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationService emailVerificationService;
 
     @Transactional(readOnly = true)
     public List<JobSeekerResponse> findAll() {
@@ -44,7 +49,7 @@ public class JobSeekerService {
     }
 
     @Transactional
-    public JobSeekerResponse register(RegisterJobSeekerRequest request) {
+    public RegisterJobSeekerResponse register(RegisterJobSeekerRequest request) {
 
         if (StringUtils.isBlank(request.getEmail()) || StringUtils.isBlank(request.getPassword())) {
             throw new BadRequestException("Email and password are required");
@@ -56,11 +61,14 @@ public class JobSeekerService {
 
         Users user = Users.builder()
                 .email(request.getEmail())
-                .password(request.getPassword())
+                .password(passwordEncoder.encode(request.getPassword()))
                 .role(JOB_SEEKER_ROLE)
                 .status(UserStatus.PENDING)
                 .build();
 
-        return jobSeekerMapper.toResponse(jobSeekerRepository.save(user));
+        Users savedUser = jobSeekerRepository.save(user);
+        var verification = emailVerificationService.sendVerificationCode(savedUser);
+
+        return jobSeekerMapper.toRegisterResponse(savedUser, verification);
     }
 }
