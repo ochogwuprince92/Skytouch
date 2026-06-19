@@ -4,7 +4,7 @@ pipeline {
     environment {
         CONTAINER_HOST = 'unix:///var/run/podman.sock'
         SPRING_PROFILES_ACTIVE = 'test'
-        DATASOURCE_URL = 'jdbc:postgresql://localhost:5432/skytouch_db'
+        DATASOURCE_URL = 'jdbc:postgresql://postgres-ci:5432/skytouch_db'
         DATASOURCE_USERNAME = 'postgres'
         DATASOURCE_PASSWORD = 'postgres'
         JWT_SECRET = 'test-jwt-secret-for-ci-only-must-be-long-enough'
@@ -28,12 +28,6 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
-            }
-        }
-
-        stage('Start Postgres') {
-            steps {
-                sh 'podman compose -f docker-compose.ci.yml up -d --wait'
             }
         }
 
@@ -93,9 +87,6 @@ pipeline {
     }
 
     post {
-        always {
-            sh 'podman compose -f docker-compose.ci.yml down -v || true'
-        }
         success {
             echo 'Pipeline completed successfully.'
         }
