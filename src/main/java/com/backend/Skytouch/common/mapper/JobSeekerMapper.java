@@ -26,15 +26,15 @@ public class JobSeekerMapper {
                 .build();
     }
 
-    public void applyOnboarding(JobSeeker profile, JobSeekerOnboardingRequest request) {
+    public void applyOnboarding(JobSeeker profile, JobSeekerOnboardingRequest request, String cvUrl) {
         if (request.getJob() != null) {
             profile.setJob(request.getJob());
         }
         if (request.getQualification() != null) {
             profile.setQualification(request.getQualification());
         }
-        if (request.getCv() != null) {
-            profile.setCv(request.getCv());
+        if (cvUrl != null) {
+            profile.setCvUrl(cvUrl);
         }
         if (request.getAbout() != null) {
             profile.setAbout(request.getAbout());
@@ -94,7 +94,7 @@ public class JobSeekerMapper {
                     .phone(profile.getPhone())
                     .job(profile.getJob())
                     .qualification(profile.getQualification())
-                    .cv(profile.getCv())
+                    .cv(profile.getCvUrl())
                     .about(profile.getAbout())
                     .openToWork(profile.getOpenToWork())
                     .addressState(profile.getAddressState())

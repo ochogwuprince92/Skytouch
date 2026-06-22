@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,6 +37,7 @@ public class JobSeekerService {
     private final JobSeekerMapper jobSeekerMapper;
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationService emailVerificationService;
+    private final FileStorageService fileStorageService;
 
     @Transactional(readOnly = true)
     public List<JobSeekerResponse> findAll() {
@@ -91,7 +93,19 @@ public class JobSeekerService {
     @Transactional
     public JobSeekerResponse updateOnboarding(String email, JobSeekerOnboardingRequest request) {
         JobSeeker profile = getProfileForUser(email);
-        jobSeekerMapper.applyOnboarding(profile, request);
+
+        String cvUrl = null;
+
+        if (request.getCv() != null && !request.getCv().isEmpty()) {
+
+            if (!"application/pdf".equalsIgnoreCase(request.getCv().getContentType())) {
+                throw new BadRequestException("Only PDF files are allowed");
+            }
+
+            cvUrl = fileStorageService.uploadPdf(request.getCv());
+        }
+
+        jobSeekerMapper.applyOnboarding(profile, request, cvUrl);
         return jobSeekerMapper.toResponse(profile.getUser(), jobSeekerRepository.save(profile));
     }
 

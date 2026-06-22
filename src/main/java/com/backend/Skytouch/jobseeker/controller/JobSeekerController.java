@@ -10,6 +10,7 @@ import com.backend.Skytouch.jobseeker.service.JobSeekerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,13 +30,19 @@ public class JobSeekerController {
     }
 
     @GetMapping("/me")
+
     public JobSeekerResponse getMe() {
         return jobSeekerService.findByEmail(SecurityUtils.getCurrentUser().getEmail());
     }
+    @PatchMapping(value = "/me/onboarding",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public JobSeekerResponse updateOnboarding(
+            @Valid @ModelAttribute JobSeekerOnboardingRequest request) {
 
-    @PatchMapping("/me/onboarding")
-    public JobSeekerResponse updateOnboarding(@Valid @RequestBody JobSeekerOnboardingRequest request) {
-        return jobSeekerService.updateOnboarding(SecurityUtils.getCurrentUser().getEmail(), request);
+        return jobSeekerService.updateOnboarding(
+                SecurityUtils.getCurrentUser().getEmail(),
+                request);
     }
 
     @PatchMapping("/me/kyc")

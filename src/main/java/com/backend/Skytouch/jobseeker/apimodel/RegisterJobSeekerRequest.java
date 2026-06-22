@@ -1,7 +1,9 @@
 package com.backend.Skytouch.jobseeker.apimodel;
 
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,6 +22,9 @@ public class RegisterJobSeekerRequest {
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
+    @NotBlank(message = "confirm your password")
+    private String confirmPassword;
+
     @Size(max = 255, message = "First name must not exceed 255 characters")
     private String firstName;
 
@@ -29,6 +34,11 @@ public class RegisterJobSeekerRequest {
     @Size(max = 255, message = "Last name must not exceed 255 characters")
     private String lastName;
 
-    @Size(max = 50, message = "Phone must not exceed 50 characters")
+    @NotBlank(message = "Phone number is required")
+    @Pattern(
+            regexp = "^\\+?[0-9]{10,15}$",
+            message = "Phone number must contain 10 to 15 digits and may start with +"
+    )
+    @Column(nullable = false)
     private String phone;
 }

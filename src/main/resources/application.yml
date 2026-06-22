@@ -3,7 +3,7 @@ server:
 
 spring:
   config:
-    import: optional:file:.env[.properties]
+    import: optional:env[.properties]
   application:
     name: Skytouch
   profiles:
@@ -23,16 +23,16 @@ spring:
           connectiontimeout: ${MAIL_CONNECTION_TIMEOUT:30000}
           timeout: ${MAIL_TIMEOUT:30000}
           writetimeout: ${MAIL_WRITE_TIMEOUT:30000}
-#
-#springdoc:
-#  api-docs:
-#    enabled: true
-#    path: /v3/api-docs
-#  swagger-ui:
-#    enabled: true
-#    path: /swagger-ui.html
-#    url: /v3/api-docs
-#    disable-swagger-default-url: true
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    url: /v3/api-docs
+    disable-swagger-default-url: true
 
 app:
   jwt:
