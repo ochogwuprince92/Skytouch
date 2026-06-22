@@ -1,46 +1,31 @@
 package com.backend.Skytouch.authentication.service;
 
-import com.backend.Skytouch.authentication.config.AuthProperties;
-import com.backend.Skytouch.authentication.entity.AuthSession;
-import com.backend.Skytouch.authentication.repository.AuthSessionRepository;
-import com.backend.Skytouch.authentication.security.TokenHasher;
+import com.backend.Skytouch.authentication.security.JwtTokenService;
+import com.backend.Skytouch.common.exception.UnauthorizedException;
+import com.backend.Skytouch.user.entity.Users;
+import com.backend.Skytouch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class SessionService {
 
-    private final AuthSessionRepository authSessionRepository;
-    private final AuthProperties authProperties;
-    private final TokenHasher tokenHasher;
+    private final JwtTokenService jwtTokenService;
+    private final UserRepository userRepository;
 
-    @Transactional
+    @Transactional(readOnly = true)
     public String createSession(UUID userId) {
-        String sessionToken = UUID.randomUUID().toString();
-        LocalDateTime now = LocalDateTime.now();
-
-        AuthSession session = AuthSession.builder()
-                .userId(userId)
-                .tokenHash(tokenHasher.hash(sessionToken))
-                .expiresAt(now.plus(Duration.ofMillis(authProperties.getSession().getExpirationMs())))
-                .build();
-
-        authSessionRepository.save(session);
-        return sessionToken;
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
+        return jwtTokenService.generateToken(user.getId(), user.getEmail(), user.getRole());
     }
 
     @Transactional(readOnly = true)
     public UUID resolveUserId(String sessionToken) {
-        return authSessionRepository
-                .findByTokenHashAndRevokedAtIsNullAndExpiresAtAfter(
-                        tokenHasher.hash(sessionToken), LocalDateTime.now())
-                .map(AuthSession::getUserId)
-                .orElse(null);
+        return jwtTokenService.resolveUserId(sessionToken);
     }
 }

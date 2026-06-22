@@ -6,6 +6,7 @@ import com.backend.Skytouch.authentication.repository.OtpCodeRepository;
 import com.backend.Skytouch.common.enums.OtpPurpose;
 import com.backend.Skytouch.common.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OtpService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -60,6 +62,10 @@ public class OtpService {
                 .build();
 
         otpCodeRepository.save(otpCode);
+
+        if (authProperties.isLogOtp()) {
+            log.info("[OTP] purpose={} email={} code={}", purpose, email, otp);
+        }
 
         if (purpose == OtpPurpose.LOGIN) {
             emailService.sendLoginOtp(email, otp);

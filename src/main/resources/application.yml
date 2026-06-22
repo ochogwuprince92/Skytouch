@@ -10,18 +10,19 @@ spring:
     active: local
 
   mail:
-    host: smtp.gmail.com
-    port: 587
-    protocol: smtp
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    protocol: ${MAIL_PROTOCOL:smtp}
     properties:
       mail:
         smtp:
-          auth: true
+          auth: ${MAIL_SMTP_AUTH:true}
           starttls:
-            enable: true
-            required: true
-          connectiontimeout: 5000
-          timeout: 5000
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
+            required: ${MAIL_SMTP_STARTTLS_REQUIRED:true}
+          connectiontimeout: ${MAIL_CONNECTION_TIMEOUT:30000}
+          timeout: ${MAIL_TIMEOUT:30000}
+          writetimeout: ${MAIL_WRITE_TIMEOUT:30000}
 #
 #springdoc:
 #  api-docs:
@@ -34,8 +35,12 @@ spring:
 #    disable-swagger-default-url: true
 
 app:
+  jwt:
+    secret: ${JWT_SECRET}
   auth:
-    email-from: ${APP_EMAIL_FROM:noreply@skytouch.com}
+    email-from: ${APP_EMAIL_FROM:${MAIL_USERNAME:noreply@skytouch.com}}
+    log-otp: ${APP_LOG_OTP:false}
+    mail-send-enabled: ${MAIL_SEND_ENABLED:true}
     otp:
       length: 6
       expiration-ms: 600000

@@ -8,9 +8,12 @@ import com.backend.Skytouch.common.exception.ConflictException;
 import com.backend.Skytouch.common.exception.ResourceNotFoundException;
 import com.backend.Skytouch.common.mapper.JobSeekerMapper;
 import com.backend.Skytouch.common.utils.StringUtils;
+import com.backend.Skytouch.jobseeker.apimodel.JobSeekerKycRequest;
+import com.backend.Skytouch.jobseeker.apimodel.JobSeekerOnboardingRequest;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerResponse;
 import com.backend.Skytouch.jobseeker.apimodel.RegisterJobSeekerRequest;
 import com.backend.Skytouch.jobseeker.apimodel.RegisterJobSeekerResponse;
+import com.backend.Skytouch.jobseeker.entity.JobSeeker;
 import com.backend.Skytouch.jobseeker.repository.JobSeekerRepository;
 import com.backend.Skytouch.user.entity.Users;
 import com.backend.Skytouch.user.repository.UserRepository;
@@ -36,21 +39,28 @@ public class JobSeekerService {
 
     @Transactional(readOnly = true)
     public List<JobSeekerResponse> findAll() {
-        return jobSeekerRepository.findByRole(JOB_SEEKER_ROLE).stream()
-                .map(jobSeekerMapper::toResponse)
+        return userRepository.findByRole(JOB_SEEKER_ROLE).stream()
+                .map(this::toResponseWithProfile)
                 .toList();
     }
 
+
     @Transactional(readOnly = true)
     public JobSeekerResponse findById(UUID id) {
-        Users user = jobSeekerRepository.findByIdAndRole(id, JOB_SEEKER_ROLE)
+        Users user = userRepository.findByIdAndRole(id, JOB_SEEKER_ROLE)
                 .orElseThrow(() -> new ResourceNotFoundException("Job seeker not found: " + id));
-        return jobSeekerMapper.toResponse(user);
+        return toResponseWithProfile(user);
+    }
+
+    @Transactional(readOnly = true)
+    public JobSeekerResponse findByEmail(String email) {
+        Users user = userRepository.findByEmailAndRole(email, JOB_SEEKER_ROLE)
+                .orElseThrow(() -> new ResourceNotFoundException("Job seeker not found: " + email));
+        return toResponseWithProfile(user);
     }
 
     @Transactional
     public RegisterJobSeekerResponse register(RegisterJobSeekerRequest request) {
-
         if (StringUtils.isBlank(request.getEmail()) || StringUtils.isBlank(request.getPassword())) {
             throw new BadRequestException("Email and password are required");
         }
@@ -59,6 +69,8 @@ public class JobSeekerService {
             throw new ConflictException("Email already registered: " + request.getEmail());
         }
 
+
+
         Users user = Users.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -66,9 +78,39 @@ public class JobSeekerService {
                 .status(UserStatus.PENDING)
                 .build();
 
-        Users savedUser = jobSeekerRepository.save(user);
+            Users savedUser = userRepository.save(user);
+
+        JobSeeker profile = jobSeekerMapper.toEntity(request, savedUser);
+        jobSeekerRepository.save(profile);
+
         var verification = emailVerificationService.sendVerificationCode(savedUser);
 
         return jobSeekerMapper.toRegisterResponse(savedUser, verification);
+    }
+
+    @Transactional
+    public JobSeekerResponse updateOnboarding(String email, JobSeekerOnboardingRequest request) {
+        JobSeeker profile = getProfileForUser(email);
+        jobSeekerMapper.applyOnboarding(profile, request);
+        return jobSeekerMapper.toResponse(profile.getUser(), jobSeekerRepository.save(profile));
+    }
+
+    @Transactional
+    public JobSeekerResponse updateKyc(String email, JobSeekerKycRequest request) {
+        JobSeeker profile = getProfileForUser(email);
+        jobSeekerMapper.applyKyc(profile, request);
+        return jobSeekerMapper.toResponse(profile.getUser(), jobSeekerRepository.save(profile));
+    }
+
+    private JobSeeker getProfileForUser(String email) {
+        Users user = userRepository.findByEmailAndRole(email, JOB_SEEKER_ROLE)
+                .orElseThrow(() -> new ResourceNotFoundException("Job seeker not found: " + email));
+        return jobSeekerRepository.findByUser_Id(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Job seeker profile not found: " + email));
+    }
+
+    private JobSeekerResponse toResponseWithProfile(Users user) {
+        JobSeeker profile = jobSeekerRepository.findByUser_Id(user.getId()).orElse(null);
+        return jobSeekerMapper.toResponse(user, profile);
     }
 }

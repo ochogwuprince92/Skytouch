@@ -32,6 +32,11 @@ public class EmailService {
     }
 
     private void sendOtpEmail(String toEmail, String subject, String text) {
+        if (!authProperties.isMailSendEnabled()) {
+            log.info("Mail send disabled; skipped email to {} subject={}", toEmail, subject);
+            return;
+        }
+
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(authProperties.getEmailFrom());
         message.setTo(toEmail);
@@ -40,8 +45,13 @@ public class EmailService {
 
         try {
             mailSender.send(message);
+            log.info("Email sent to {} subject={}", toEmail, subject);
         } catch (Exception ex) {
             log.error("Failed to send email to {}", toEmail, ex);
+            if (authProperties.isLogOtp()) {
+                log.warn("Continuing without email because APP_LOG_OTP is enabled; use the OTP from the logs above");
+                return;
+            }
             throw ex;
         }
     }

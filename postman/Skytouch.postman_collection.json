@@ -1,0 +1,459 @@
+{
+  "info": {
+    "_postman_id": "skytouch-api-collection",
+    "name": "Skytouch API",
+    "description": "End-to-end API tests for Skytouch.\n\n## Run order\n1. Register Job Seeker — POST /api/job-seekers/register\n2. Set `emailOtp` from your inbox, then Verify Email\n3. Request Login OTP, set `loginOtp`, then Verify Login OTP\n4. Run Job Seeker Profile folder\n\n## Newman (CLI)\n```\nnewman run postman/Skytouch.postman_collection.json -e postman/Skytouch-Local.postman_environment.json --env-var \"emailOtp=123456\" --env-var \"loginOtp=123456\"\n```",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.environment.get('testEmail') || pm.info.requestName === 'Register Job Seeker') {",
+          "    pm.environment.set('testEmail', `ada.okafor.${Date.now()}@gmail.com`);",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Response time under 5s', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Job Seeker Signup",
+      "item": [
+        {
+          "name": "Register Job Seeker",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('testEmail', `ada.okafor.${Date.now()}@gmail.com`);",
+                  "console.log('Registering with email:', pm.environment.get('testEmail'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Returns user id and email', function () {",
+                  "    pm.expect(body.id).to.be.a('string');",
+                  "    pm.expect(body.email).to.eql(pm.environment.get('testEmail'));",
+                  "    pm.expect(body.emailVerified).to.eql(false);",
+                  "});",
+                  "",
+                  "pm.environment.set('userId', body.id);",
+                  "console.log('Saved userId:', body.id);",
+                  "console.log('Next: set emailOtp from inbox for', body.email);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"firstName\": \"{{firstName}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"phone\": \"{{phone}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/job-seekers/register"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Email Verification",
+      "item": [
+        {
+          "name": "Resend Email Verification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('OTP sent message returned', function () {",
+                  "    pm.expect(pm.response.json().message).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/email/resend"
+          }
+        },
+        {
+          "name": "Verify Email",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const otp = pm.environment.get('emailOtp');",
+                  "if (!otp) {",
+                  "    throw new Error('Set emailOtp in environment (6-digit code from email or otp_codes table)');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Email verified', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.emailVerified).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"otp\": \"{{emailOtp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/email/verify"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Login (OTP)",
+      "item": [
+        {
+          "name": "Request Login OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('OTP sent', function () {",
+                  "    pm.expect(pm.response.json().expiresIn).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/otp/request"
+          }
+        },
+        {
+          "name": "Verify Login OTP",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const otp = pm.environment.get('loginOtp');",
+                  "if (!otp) {",
+                  "    throw new Error('Set loginOtp in environment (6-digit code from email)');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Returns JWT access token', function () {",
+                  "    pm.expect(body.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.expect(body.tokenType).to.eql('Bearer');",
+                  "});",
+                  "",
+                  "pm.environment.set('accessToken', body.accessToken);",
+                  "pm.environment.set('userId', body.userId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"otp\": \"{{loginOtp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/otp/verify"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Job Seeker Profile",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Profile matches registered user', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.email).to.eql(pm.environment.get('testEmail'));",
+                  "    pm.expect(body.firstName).to.eql(pm.environment.get('firstName'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/job-seekers/me"
+          }
+        },
+        {
+          "name": "Update Onboarding",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Onboarding fields saved', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.job).to.eql('Software Engineer');",
+                  "    pm.expect(body.openToWork).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job\": \"Software Engineer\",\n  \"qualification\": \"BSc Computer Science\",\n  \"about\": \"Backend developer with Java experience.\",\n  \"openToWork\": true,\n  \"addressState\": \"Lagos\",\n  \"addressLga\": \"Ikeja\",\n  \"addressLine\": \"Allen Avenue\"\n}"
+            },
+            "url": "{{baseUrl}}/api/job-seekers/me/onboarding"
+          }
+        },
+        {
+          "name": "Update KYC",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('KYC fields saved', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.nin).to.eql('12345678901');",
+                  "    pm.expect(body.gender).to.eql('Female');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nin\": \"12345678901\",\n  \"birthday\": \"1995-06-15\",\n  \"gender\": \"Female\",\n  \"addressNo\": \"12\",\n  \"addressLine\": \"Allen Avenue\",\n  \"addressLga\": \"Ikeja\",\n  \"addressState\": \"Lagos\"\n}"
+            },
+            "url": "{{baseUrl}}/api/job-seekers/me/kyc"
+          }
+        },
+        {
+          "name": "List All Job Seekers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns array', function () {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/job-seekers"
+          }
+        },
+        {
+          "name": "Get Job Seeker By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns correct user', function () {",
+                  "    pm.expect(pm.response.json().id).to.eql(pm.environment.get('userId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/job-seekers/{{userId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Negative Tests",
+      "item": [
+        {
+          "name": "Protected route without token returns 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/job-seekers/me"
+          }
+        },
+        {
+          "name": "Register with invalid email returns 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"not-an-email\",\n  \"password\": \"short\"\n}"
+            },
+            "url": "{{baseUrl}}/api/job-seekers/register"
+          }
+        }
+      ]
+    }
+  ]
+}
