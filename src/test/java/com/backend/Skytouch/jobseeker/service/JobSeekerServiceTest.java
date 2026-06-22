@@ -6,6 +6,7 @@ import com.backend.Skytouch.common.enums.UserRole;
 import com.backend.Skytouch.common.enums.UserStatus;
 import com.backend.Skytouch.common.mapper.JobSeekerMapper;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerOnboardingRequest;
+import com.backend.Skytouch.jobseeker.apimodel.JobSeekerResponse;
 import com.backend.Skytouch.jobseeker.apimodel.RegisterJobSeekerRequest;
 import com.backend.Skytouch.jobseeker.entity.JobSeeker;
 import com.backend.Skytouch.jobseeker.repository.JobSeekerRepository;
@@ -20,15 +21,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class JobSeekerServiceTest {
@@ -50,6 +50,9 @@ class JobSeekerServiceTest {
 
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    @Mock
+    FileStorageService fileStorageService;
+
     @BeforeEach
     void setUp() {
         jobSeekerService = new JobSeekerService(
@@ -57,7 +60,8 @@ class JobSeekerServiceTest {
                 userRepository,
                 jobSeekerMapper,
                 passwordEncoder,
-                emailVerificationService
+                emailVerificationService,
+                fileStorageService
         );
     }
 
@@ -132,16 +136,24 @@ class JobSeekerServiceTest {
                 .user(user)
                 .status(UserStatus.ACTIVE)
                 .build();
+
+        MultipartFile mockCv = mock(MultipartFile.class);
+        when(mockCv.isEmpty()).thenReturn(false);
+        when(mockCv.getContentType()).thenReturn("application/pdf");
+
         JobSeekerOnboardingRequest request = new JobSeekerOnboardingRequest();
         request.setJob("Software Engineer");
         request.setOpenToWork(true);
+        request.setCv(mockCv);
 
         when(userRepository.findByEmailAndRole("seeker@example.com", UserRole.JOB_SEEKER))
                 .thenReturn(Optional.of(user));
         when(jobSeekerRepository.findByUser_Id(userId)).thenReturn(Optional.of(profile));
+        when(fileStorageService.uploadPdf(mockCv))
+                .thenReturn("expected-cv-url");
         when(jobSeekerRepository.save(profile)).thenReturn(profile);
         when(jobSeekerMapper.toResponse(user, profile)).thenReturn(
-                com.backend.Skytouch.jobseeker.apimodel.JobSeekerResponse.builder()
+                JobSeekerResponse.builder()
                         .email(user.getEmail())
                         .job("Software Engineer")
                         .openToWork(true)
@@ -149,7 +161,7 @@ class JobSeekerServiceTest {
 
         jobSeekerService.updateOnboarding("seeker@example.com", request);
 
-        verify(jobSeekerMapper).applyOnboarding(profile, request);
+        verify(jobSeekerMapper).applyOnboarding(eq(profile), eq(request), eq("expected-cv-url"));
         verify(jobSeekerRepository).save(profile);
     }
 }
