@@ -21,6 +21,8 @@ spring:
     password: ${MAIL_PASSWORD:test}
 
 app:
+  jwt:
+    secret: ${JWT_SECRET:test-jwt-secret-for-ci-only-must-be-long-enough}
   auth:
     email-from: ${APP_EMAIL_FROM:noreply@skytouch.com}
   frontend:

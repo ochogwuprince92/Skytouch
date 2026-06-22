@@ -15,11 +15,15 @@ public class OpenApiSecurityConfig {
     @Bean
     public OpenApiCustomizer bearerAuthOpenApiCustomizer() {
         return openApi -> {
-            openApi.components(new Components()
-                    .addSecuritySchemes(BEARER_SCHEME, new SecurityScheme()
-                            .type(SecurityScheme.Type.HTTP)
-                            .scheme("bearer")
-                            .description("Session token from POST /api/auth/otp/verify")));
+            Components components = openApi.getComponents();
+            if (components == null) {
+                components = new Components();
+                openApi.setComponents(components);
+            }
+            components.addSecuritySchemes(BEARER_SCHEME, new SecurityScheme()
+                    .type(SecurityScheme.Type.HTTP)
+                    .scheme("bearer")
+                    .description("JWT access token from POST /api/auth/otp/verify"));
             openApi.addSecurityItem(new SecurityRequirement().addList(BEARER_SCHEME));
         };
     }

@@ -1,5 +1,8 @@
 package com.backend.Skytouch.jobseeker.controller;
 
+import com.backend.Skytouch.authentication.security.SecurityUtils;
+import com.backend.Skytouch.jobseeker.apimodel.JobSeekerKycRequest;
+import com.backend.Skytouch.jobseeker.apimodel.JobSeekerOnboardingRequest;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerResponse;
 import com.backend.Skytouch.jobseeker.apimodel.RegisterJobSeekerRequest;
 import com.backend.Skytouch.jobseeker.apimodel.RegisterJobSeekerResponse;
@@ -19,11 +22,25 @@ public class JobSeekerController {
 
     private final JobSeekerService jobSeekerService;
 
-
-    @PostMapping
+    @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public RegisterJobSeekerResponse register(@Valid @RequestBody RegisterJobSeekerRequest request) {
         return jobSeekerService.register(request);
+    }
+
+    @GetMapping("/me")
+    public JobSeekerResponse getMe() {
+        return jobSeekerService.findByEmail(SecurityUtils.getCurrentUser().getEmail());
+    }
+
+    @PatchMapping("/me/onboarding")
+    public JobSeekerResponse updateOnboarding(@Valid @RequestBody JobSeekerOnboardingRequest request) {
+        return jobSeekerService.updateOnboarding(SecurityUtils.getCurrentUser().getEmail(), request);
+    }
+
+    @PatchMapping("/me/kyc")
+    public JobSeekerResponse updateKyc(@Valid @RequestBody JobSeekerKycRequest request) {
+        return jobSeekerService.updateKyc(SecurityUtils.getCurrentUser().getEmail(), request);
     }
 
     @GetMapping
@@ -35,5 +52,4 @@ public class JobSeekerController {
     public JobSeekerResponse getById(@PathVariable UUID id) {
         return jobSeekerService.findById(id);
     }
-
 }

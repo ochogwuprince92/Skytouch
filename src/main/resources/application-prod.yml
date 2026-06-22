@@ -27,8 +27,11 @@ spring:
     password: ${MAIL_PASSWORD}
 
 app:
+  jwt:
+    secret: ${JWT_SECRET}
   auth:
-    email-from: ${APP_EMAIL_FROM:noreply@skytouch.com}
+    email-from: ${APP_EMAIL_FROM:${MAIL_USERNAME:noreply@skytouch.com}}
+    log-otp: ${APP_LOG_OTP:false}
   frontend:
     url: ${APP_FRONTEND_URL}
 
