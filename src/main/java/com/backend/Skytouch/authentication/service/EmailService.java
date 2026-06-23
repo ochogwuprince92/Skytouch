@@ -18,7 +18,7 @@ public class EmailService {
     public void sendLoginOtp(String toEmail, String otp) {
         sendOtpEmail(
                 toEmail,
-                "Your Skytouch login code",
+                "Your SkyTouch login code",
                 "Your one-time login code is: " + otp
                         + "\n\nThis code expires in 10 minutes. Do not share it with anyone.");
     }
@@ -26,7 +26,7 @@ public class EmailService {
     public void sendEmailVerificationOtp(String toEmail, String otp) {
         sendOtpEmail(
                 toEmail,
-                "Verify your Skytouch email",
+                "Verify your SkyTouch email",
                 "Your email verification code is: " + otp
                         + "\n\nEnter this code to activate your account. It expires in 10 minutes. Do not share it with anyone.");
     }
