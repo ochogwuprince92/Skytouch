@@ -28,10 +28,7 @@ public class OtpService {
     private final AuthProperties authProperties;
     private final EmailService emailService;
 
-    @Transactional
-    public void sendLoginOtp(UUID userId, String email) {
-        sendOtp(userId, email, OtpPurpose.LOGIN);
-    }
+    // ─── Email Verification ───────────────────────────────────────────────────
 
     @Transactional
     public void sendEmailVerificationOtp(UUID userId, String email) {
@@ -39,14 +36,11 @@ public class OtpService {
     }
 
     @Transactional
-    public void verifyLoginOtp(UUID userId, String rawOtp) {
-        verifyOtp(userId, rawOtp, OtpPurpose.LOGIN);
-    }
-
-    @Transactional
     public void verifyEmailVerificationOtp(UUID userId, String rawOtp) {
         verifyOtp(userId, rawOtp, OtpPurpose.EMAIL_VERIFICATION);
     }
+
+    // ─── Core send/verify ─────────────────────────────────────────────────────
 
     @Transactional
     public void sendOtp(UUID userId, String email, OtpPurpose purpose) {
@@ -67,10 +61,11 @@ public class OtpService {
             log.info("[OTP] purpose={} email={} code={}", purpose, email, otp);
         }
 
-        if (purpose == OtpPurpose.LOGIN) {
-            emailService.sendLoginOtp(email, otp);
-        } else if (purpose == OtpPurpose.EMAIL_VERIFICATION) {
+        // ✅ LOGIN removed — only EMAIL_VERIFICATION and PASSWORD_RESET
+        if (purpose == OtpPurpose.EMAIL_VERIFICATION) {
             emailService.sendEmailVerificationOtp(email, otp);
+        } else if (purpose == OtpPurpose.PASSWORD_RESET) {
+            emailService.sendPasswordResetOtp(email, otp);
         }
     }
 
@@ -96,6 +91,8 @@ public class OtpService {
         otpCode.setConsumedAt(now);
         otpCodeRepository.save(otpCode);
     }
+
+    // ─── Private helpers ──────────────────────────────────────────────────────
 
     private String generateOtp() {
         int length = authProperties.getOtp().getLength();

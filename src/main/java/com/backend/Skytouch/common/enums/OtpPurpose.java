@@ -1,6 +1,6 @@
 package com.backend.Skytouch.common.enums;
 
 public enum OtpPurpose {
-    LOGIN,
-    EMAIL_VERIFICATION
+    EMAIL_VERIFICATION,
+    PASSWORD_RESET
 }

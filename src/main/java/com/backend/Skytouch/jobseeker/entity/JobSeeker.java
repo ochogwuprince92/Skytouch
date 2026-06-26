@@ -44,9 +44,6 @@ public class JobSeeker {
     @Column(nullable = false)
     private String phone;
 
-    @Column(nullable = false)
-    private String password;
-
     private String gender;
 
     private LocalDate birthday;
@@ -59,7 +56,7 @@ public class JobSeeker {
 
     private String qualification;
 
-    @Column(nullable = false)
+    @Column
     private String cvUrl;
 
     @Column(columnDefinition = "TEXT")

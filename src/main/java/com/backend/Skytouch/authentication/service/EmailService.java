@@ -15,20 +15,20 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final AuthProperties authProperties;
 
-    public void sendLoginOtp(String toEmail, String otp) {
-        sendOtpEmail(
-                toEmail,
-                "Your SkyTouch login code",
-                "Your one-time login code is: " + otp
-                        + "\n\nThis code expires in 10 minutes. Do not share it with anyone.");
-    }
-
     public void sendEmailVerificationOtp(String toEmail, String otp) {
         sendOtpEmail(
                 toEmail,
-                "Verify your SkyTouch email",
+                "Verify your Skytouch email",
                 "Your email verification code is: " + otp
                         + "\n\nEnter this code to activate your account. It expires in 10 minutes. Do not share it with anyone.");
+    }
+
+    public void sendPasswordResetOtp(String toEmail, String otp) {
+        sendOtpEmail(
+                toEmail,
+                "Reset your Skytouch password",
+                "Your password reset code is: " + otp
+                        + "\n\nThis code expires in 10 minutes. If you didn't request this, ignore this email. Do not share it with anyone.");
     }
 
     private void sendOtpEmail(String toEmail, String subject, String text) {

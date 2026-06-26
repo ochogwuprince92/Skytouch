@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:5432/skytouch_db}
-    username: ${DATASOURCE_USERNAME:postgres}
-    password: ${DATASOURCE_PASSWORD:postgres}
+    url: jdbc:postgresql://localhost:5432/SkyTouch_db
+    username: postgres
+    password: ogwaa123
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -11,25 +11,31 @@ spring:
     show-sql: false
 
   flyway:
-    enabled: true
-    baseline-on-migrate: true
-    baseline-version: 0
-    locations: classpath:db/migration
+    enabled: false
 
   mail:
-    username: ${MAIL_USERNAME:test@example.com}
-    password: ${MAIL_PASSWORD:test}
+    host: smtp.gmail.com
+    port: 587
+    username: test@example.com
+    password: test
+
+cloudinary:
+  cloud-name: test-cloud
+  api-key: test-key
+  api-secret: test-secret
 
 app:
   jwt:
-    secret: ${JWT_SECRET:test-jwt-secret-for-ci-only-must-be-long-enough}
+    secret: mySecretKeyForJWTTokenGenerationAndValidationPurposeOnly123456789012
   auth:
-    email-from: ${APP_EMAIL_FROM:noreply@skytouch.com}
+    email-from: noreply@skytouch.com
+    log-otp: true
+    mail-send-enabled: false
+    otp:
+      expiration-ms: 600000
+      length: 6
+      max-attempts: 5
+    session:
+      expiration-ms: 86400000
   frontend:
-    url: ${APP_FRONTEND_URL:http://localhost:4174}
-
-
-cloudinary:
-    cloud-name: test-cloud
-    api-key: test-key
-    api-secret: test-secret
+    url: http://localhost:4173

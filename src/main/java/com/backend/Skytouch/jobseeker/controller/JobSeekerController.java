@@ -4,8 +4,8 @@ import com.backend.Skytouch.authentication.security.SecurityUtils;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerKycRequest;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerOnboardingRequest;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerResponse;
-import com.backend.Skytouch.jobseeker.apimodel.RegisterJobSeekerRequest;
-import com.backend.Skytouch.jobseeker.apimodel.RegisterJobSeekerResponse;
+import com.backend.Skytouch.authentication.apimodel.RegisterJobSeekerRequest;
+import com.backend.Skytouch.authentication.apimodel.RegisterJobSeekerResponse;
 import com.backend.Skytouch.jobseeker.service.JobSeekerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,14 +23,7 @@ public class JobSeekerController {
 
     private final JobSeekerService jobSeekerService;
 
-    @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
-    public RegisterJobSeekerResponse register(@Valid @RequestBody RegisterJobSeekerRequest request) {
-        return jobSeekerService.register(request);
-    }
-
     @GetMapping("/me")
-
     public JobSeekerResponse getMe() {
         return jobSeekerService.findByEmail(SecurityUtils.getCurrentUser().getEmail());
     }

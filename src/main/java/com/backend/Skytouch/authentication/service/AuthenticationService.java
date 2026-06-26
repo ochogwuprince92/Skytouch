@@ -1,16 +1,22 @@
 package com.backend.Skytouch.authentication.service;
 
-import com.backend.Skytouch.authentication.apimodel.AuthResponse;
-import com.backend.Skytouch.authentication.apimodel.OtpSentResponse;
-import com.backend.Skytouch.authentication.apimodel.RequestOtpRequest;
-import com.backend.Skytouch.authentication.apimodel.VerifyOtpRequest;
+import com.backend.Skytouch.authentication.apimodel.*;
 import com.backend.Skytouch.authentication.config.AuthProperties;
 import com.backend.Skytouch.authentication.repository.AuthenticationRepository;
 import com.backend.Skytouch.authentication.security.PasswordVerifier;
+import com.backend.Skytouch.common.enums.OtpPurpose;
+import com.backend.Skytouch.common.enums.UserRole;
 import com.backend.Skytouch.common.enums.UserStatus;
+import com.backend.Skytouch.common.exception.BadRequestException;
+import com.backend.Skytouch.common.exception.ConflictException;
+import com.backend.Skytouch.common.exception.ResourceNotFoundException;
 import com.backend.Skytouch.common.exception.UnauthorizedException;
+import com.backend.Skytouch.common.mapper.JobSeekerMapper;
 import com.backend.Skytouch.common.utils.EmailUtils;
+import com.backend.Skytouch.jobseeker.entity.JobSeeker;
+import com.backend.Skytouch.jobseeker.repository.JobSeekerRepository;
 import com.backend.Skytouch.user.entity.Users;
+import com.backend.Skytouch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,30 +27,67 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthenticationService {
 
     private final AuthenticationRepository authenticationRepository;
+    private final UserRepository userRepository;
+    private final JobSeekerRepository jobSeekerRepository;
+    private final JobSeekerMapper jobSeekerMapper;
     private final PasswordEncoder passwordEncoder;
     private final PasswordVerifier passwordVerifier;
     private final OtpService otpService;
     private final SessionService sessionService;
+    private final EmailVerificationService emailVerificationService;
     private final AuthProperties authProperties;
 
-    @Transactional
-    public OtpSentResponse requestOtp(RequestOtpRequest request) {
-        Users user = authenticateCredentials(request.getEmail(), request.getPassword());
-        otpService.sendLoginOtp(user.getId(), user.getEmail());
+    // ─── Register ─────────────────────────────────────────────────────────────
 
-        return OtpSentResponse.builder()
-                .message("OTP sent to " + EmailUtils.maskEmail(user.getEmail()))
-                .expiresIn(authProperties.getOtp().getExpirationMs())
+    @Transactional
+    public RegisterJobSeekerResponse register(RegisterJobSeekerRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new ConflictException("Email already registered: " + request.getEmail());
+        }
+
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("Passwords do not match");
+        }
+
+        Users user = Users.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(UserRole.JOB_SEEKER)
+                .status(UserStatus.PENDING)
                 .build();
+
+        Users savedUser = userRepository.save(user);
+
+        JobSeeker profile = jobSeekerMapper.toEntity(request, savedUser);
+        jobSeekerRepository.save(profile);
+
+        var verification = emailVerificationService.sendVerificationCode(savedUser);
+
+        return jobSeekerMapper.toRegisterResponse(savedUser, verification);
     }
 
+    // ─── Login ────────────────────────────────────────────────────────────────
+
     @Transactional
-    public AuthResponse verifyOtp(VerifyOtpRequest request) {
+    public AuthResponse login(LoginRequest request) {
         Users user = authenticationRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UnauthorizedException("Invalid or expired OTP"));
+                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
         assertAccountActive(user);
-        otpService.verifyLoginOtp(user.getId(), request.getOtp());
+
+        if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+            throw new UnauthorizedException(
+                    "Email not verified. Check your inbox or request a new code.");
+        }
+
+        if (!passwordVerifier.matches(request.getPassword(), user.getPassword(), passwordEncoder)) {
+            throw new UnauthorizedException("Invalid email or password");
+        }
+
+        if (passwordVerifier.isLegacyPassword(user.getPassword())) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            authenticationRepository.save(user);
+        }
 
         String sessionToken = sessionService.createSession(user.getId());
 
@@ -57,27 +100,52 @@ public class AuthenticationService {
                 .build();
     }
 
-    private Users authenticateCredentials(String email, String password) {
-        Users user = authenticationRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
+    // ─── Forgot password ──────────────────────────────────────────────────────
+
+    @Transactional
+    public OtpSentResponse forgotPassword(ForgotPasswordRequest request) {
+        Users user = authenticationRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No account found for email: " + request.getEmail()));
 
         assertAccountActive(user);
+        otpService.sendOtp(user.getId(), user.getEmail(), OtpPurpose.PASSWORD_RESET);
 
-        if (!Boolean.TRUE.equals(user.getEmailVerified())) {
-            throw new UnauthorizedException("Email verification required. Check your inbox or request a new code.");
-        }
-
-        if (!passwordVerifier.matches(password, user.getPassword(), passwordEncoder)) {
-            throw new UnauthorizedException("Invalid email or password");
-        }
-
-        if (passwordVerifier.isLegacyPassword(user.getPassword())) {
-            user.setPassword(passwordEncoder.encode(password));
-            authenticationRepository.save(user);
-        }
-
-        return user;
+        return OtpSentResponse.builder()
+                .message("Password reset code sent to " + EmailUtils.maskEmail(user.getEmail()))
+                .expiresIn(authProperties.getOtp().getExpirationMs())
+                .build();
     }
+
+    // ─── Reset password ───────────────────────────────────────────────────────
+
+    @Transactional
+    public AuthResponse resetPassword(ResetPasswordRequest request) {
+        Users user = authenticationRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UnauthorizedException("Invalid or expired OTP"));
+
+        assertAccountActive(user);
+        otpService.verifyOtp(user.getId(), request.getOtp(), OtpPurpose.PASSWORD_RESET);
+
+        if (request.getNewPassword() == null || request.getNewPassword().length() < 8) {
+            throw new BadRequestException("Password must be at least 8 characters");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        authenticationRepository.save(user);
+
+        String sessionToken = sessionService.createSession(user.getId());
+
+        return AuthResponse.builder()
+                .accessToken(sessionToken)
+                .expiresIn(authProperties.getSession().getExpirationMs())
+                .userId(user.getId())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .build();
+    }
+
+    // ─── Private helpers ──────────────────────────────────────────────────────
 
     private void assertAccountActive(Users user) {
         if (!Boolean.TRUE.equals(user.getActive())) {
