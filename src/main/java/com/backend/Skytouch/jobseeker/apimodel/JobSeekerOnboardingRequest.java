@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @Setter
@@ -16,7 +17,7 @@ public class JobSeekerOnboardingRequest {
     @Size(max = 255, message = "Qualification must not exceed 255 characters")
     private String qualification;
 
-    private String cv;
+    private MultipartFile cv;
 
     private String about;
 

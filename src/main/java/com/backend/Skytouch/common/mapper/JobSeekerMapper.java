@@ -5,8 +5,8 @@ import com.backend.Skytouch.common.enums.UserStatus;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerKycRequest;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerOnboardingRequest;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerResponse;
-import com.backend.Skytouch.jobseeker.apimodel.RegisterJobSeekerRequest;
-import com.backend.Skytouch.jobseeker.apimodel.RegisterJobSeekerResponse;
+import com.backend.Skytouch.authentication.apimodel.RegisterJobSeekerRequest;
+import com.backend.Skytouch.authentication.apimodel.RegisterJobSeekerResponse;
 import com.backend.Skytouch.jobseeker.entity.JobSeeker;
 import com.backend.Skytouch.user.entity.Users;
 import org.springframework.stereotype.Component;
@@ -26,15 +26,15 @@ public class JobSeekerMapper {
                 .build();
     }
 
-    public void applyOnboarding(JobSeeker profile, JobSeekerOnboardingRequest request) {
+    public void applyOnboarding(JobSeeker profile, JobSeekerOnboardingRequest request, String cvUrl) {
         if (request.getJob() != null) {
             profile.setJob(request.getJob());
         }
         if (request.getQualification() != null) {
             profile.setQualification(request.getQualification());
         }
-        if (request.getCv() != null) {
-            profile.setCv(request.getCv());
+        if (cvUrl != null) {
+            profile.setCvUrl(cvUrl);
         }
         if (request.getAbout() != null) {
             profile.setAbout(request.getAbout());
@@ -94,7 +94,7 @@ public class JobSeekerMapper {
                     .phone(profile.getPhone())
                     .job(profile.getJob())
                     .qualification(profile.getQualification())
-                    .cv(profile.getCv())
+                    .cv(profile.getCvUrl())
                     .about(profile.getAbout())
                     .openToWork(profile.getOpenToWork())
                     .addressState(profile.getAddressState())

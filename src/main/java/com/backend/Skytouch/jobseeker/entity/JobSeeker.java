@@ -41,6 +41,7 @@ public class JobSeeker {
     @Column(name = "last_name")
     private String lastName;
 
+    @Column(nullable = false)
     private String phone;
 
     private String gender;
@@ -55,8 +56,8 @@ public class JobSeeker {
 
     private String qualification;
 
-    @Column(columnDefinition = "TEXT")
-    private String cv;
+    @Column
+    private String cvUrl;
 
     @Column(columnDefinition = "TEXT")
     private String about;
