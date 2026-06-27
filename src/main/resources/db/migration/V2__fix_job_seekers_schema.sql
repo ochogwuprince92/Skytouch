@@ -1,0 +1,1 @@
+ALTER TABLE job_seekers DROP COLUMN IF EXISTS password;
