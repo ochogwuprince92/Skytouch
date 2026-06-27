@@ -16,7 +16,6 @@ target/
 .sts4-cache
 *.application.yml
 *.application-local.yml
-*.application-prod.yml
 
 ### IntelliJ IDEA ###
 .idea
