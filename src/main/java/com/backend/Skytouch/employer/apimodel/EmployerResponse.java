@@ -21,5 +21,6 @@ public class EmployerResponse {
     private final String lastName;
     private final String phone;
     private final String companyName;
+    private final UUID companyId;
     private final String jobTitle;
 }

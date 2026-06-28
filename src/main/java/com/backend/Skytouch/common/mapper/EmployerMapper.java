@@ -4,6 +4,7 @@ import com.backend.Skytouch.authentication.apimodel.RegisterRequest;
 import com.backend.Skytouch.common.enums.UserStatus;
 import com.backend.Skytouch.employer.apimodel.EmployerProfileRequest;
 import com.backend.Skytouch.employer.apimodel.EmployerResponse;
+import com.backend.Skytouch.company.entity.Company;
 import com.backend.Skytouch.employer.entity.Employer;
 import com.backend.Skytouch.user.entity.Users;
 import org.springframework.stereotype.Component;
@@ -47,11 +48,13 @@ public class EmployerMapper {
                 .createdAt(user.getCreatedAt());
 
         if (profile != null) {
+            Company company = profile.getCompany();
             builder
                     .firstName(profile.getFirstName())
                     .lastName(profile.getLastName())
                     .phone(profile.getPhone())
-                    .companyName(profile.getCompanyName())
+                    .companyName(company != null ? company.getName() : profile.getCompanyName())
+                    .companyId(company != null ? company.getId() : null)
                     .jobTitle(profile.getJobTitle());
         }
 

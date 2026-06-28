@@ -1,6 +1,7 @@
 package com.backend.Skytouch.employer.entity;
 
 import com.backend.Skytouch.common.enums.UserStatus;
+import com.backend.Skytouch.company.entity.Company;
 import com.backend.Skytouch.user.entity.Users;
 import jakarta.persistence.*;
 import lombok.*;
@@ -45,6 +46,10 @@ public class Employer {
 
     @Column(name = "job_title")
     private String jobTitle;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

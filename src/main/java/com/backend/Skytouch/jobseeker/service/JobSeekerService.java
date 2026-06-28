@@ -2,11 +2,13 @@ package com.backend.Skytouch.jobseeker.service;
 
 import com.backend.Skytouch.common.address.AddressValidationService;
 import com.backend.Skytouch.common.address.ValidatedAddress;
+import com.backend.Skytouch.common.apimodel.PageResponse;
 import com.backend.Skytouch.common.enums.UserRole;
 import com.backend.Skytouch.common.exception.BadRequestException;
 import com.backend.Skytouch.common.exception.ResourceNotFoundException;
 import com.backend.Skytouch.common.mapper.JobSeekerMapper;
 import com.backend.Skytouch.common.profile.JobSeekerProfileCompletenessCalculator;
+import com.backend.Skytouch.common.util.PaginationUtils;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerDashboardResponse;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerDashboardStats;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerKycRequest;
@@ -17,11 +19,12 @@ import com.backend.Skytouch.jobseeker.repository.JobSeekerRepository;
 import com.backend.Skytouch.user.entity.Users;
 import com.backend.Skytouch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -38,10 +41,11 @@ public class JobSeekerService {
     private final JobSeekerProfileCompletenessCalculator profileCompletenessCalculator;
 
     @Transactional(readOnly = true)
-    public List<JobSeekerResponse> findAll() {
-        return userRepository.findByRole(JOB_SEEKER_ROLE).stream()
-                .map(this::toResponseWithProfile)
-                .toList();
+    public PageResponse<JobSeekerResponse> findAll(int page, int size) {
+        Page<Users> users = userRepository.findByRole(
+                JOB_SEEKER_ROLE,
+                PaginationUtils.pageable(page, size, Sort.by(Sort.Direction.ASC, "email")));
+        return PaginationUtils.mapPage(users, this::toResponseWithProfile);
     }
 
     @Transactional(readOnly = true)

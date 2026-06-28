@@ -1,6 +1,7 @@
 package com.backend.Skytouch.employer.controller;
 
 import com.backend.Skytouch.authentication.security.SecurityUtils;
+import com.backend.Skytouch.common.apimodel.PageResponse;
 import com.backend.Skytouch.employer.apimodel.EmployerDashboardResponse;
 import com.backend.Skytouch.employer.apimodel.EmployerProfileRequest;
 import com.backend.Skytouch.employer.apimodel.EmployerResponse;
@@ -9,7 +10,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -35,8 +35,10 @@ public class EmployerController {
     }
 
     @GetMapping
-    public List<EmployerResponse> list() {
-        return employerService.findAll();
+    public PageResponse<EmployerResponse> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return employerService.findAll(page, size);
     }
 
     @GetMapping("/{id}")
