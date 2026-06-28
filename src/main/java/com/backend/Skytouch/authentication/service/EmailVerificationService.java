@@ -2,7 +2,6 @@ package com.backend.Skytouch.authentication.service;
 
 import com.backend.Skytouch.authentication.apimodel.EmailVerifiedResponse;
 import com.backend.Skytouch.authentication.apimodel.OtpSentResponse;
-import com.backend.Skytouch.authentication.apimodel.VerifyOtpRequest;
 import com.backend.Skytouch.authentication.config.AuthProperties;
 import com.backend.Skytouch.authentication.repository.AuthenticationRepository;
 import com.backend.Skytouch.common.enums.UserStatus;
@@ -12,6 +11,7 @@ import com.backend.Skytouch.common.exception.UnauthorizedException;
 import com.backend.Skytouch.common.utils.EmailUtils;
 import com.backend.Skytouch.user.entity.Users;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,8 +41,12 @@ public class EmailVerificationService {
     }
 
     @Transactional
-    public EmailVerifiedResponse verifyEmail(VerifyOtpRequest request) {
-        Users user = authenticationRepository.findByEmail(request.getEmail())
+    public EmailVerifiedResponse verifyEmail(String email, String otp) {
+        if (!StringUtils.hasText(email)) {
+            throw new BadRequestException("Email is required");
+        }
+
+        Users user = authenticationRepository.findByEmail(email.trim())
                 .orElseThrow(() -> new UnauthorizedException("Invalid or expired OTP"));
 
         if (Boolean.TRUE.equals(user.getEmailVerified())) {
@@ -50,7 +54,7 @@ public class EmailVerificationService {
         }
 
         assertAccountActive(user);
-        otpService.verifyEmailVerificationOtp(user.getId(), request.getOtp());
+        otpService.verifyEmailVerificationOtp(user.getId(), otp);
 
         user.setEmailVerified(true);
         if (user.getStatus() == UserStatus.PENDING) {

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "skytouch-api-collection-v2",
     "name": "Skytouch API v2",
-    "description": "End-to-end API tests for Skytouch.\n\n## Run order\n1. Register → POST /api/auth/register\n2. Set `emailOtp` from inbox, then Verify Email\n3. Login → POST /api/auth/login (returns token directly)\n4. Run Job Seeker Profile folder\n5. Forgot Password → set `resetOtp` from inbox, then Reset Password\n\n## Newman (CLI)\n```\nnewman run Skytouch.postman_collection.json -e Skytouch-Local.postman_environment.json --env-var \"emailOtp=123456\" --env-var \"resetOtp=123456\"\n```",
+    "description": "End-to-end API tests for Skytouch.\n\n## Run order\n1. Register Job Seeker → POST /api/auth/register\n2. Register Employer (same folder)\n3. Set `emailOtp` / `employerEmailOtp` from inbox or app logs (APP_LOG_OTP=true)\n4. Verify Email + Verify Employer Email\n5. Login (job seeker) + Login Employer\n6. Run 04 - Job Seeker Profile OR 04b Employer Profile + 04d Company\n\n## Newman (CLI)\n```\nnewman run Skytouch.postman_collection.json -e Skytouch-Local.postman_environment.json --env-var \"emailOtp=123456\" --env-var \"employerEmailOtp=123456\"\n```",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -56,9 +56,10 @@
                   "",
                   "const body = pm.response.json();",
                   "",
-                  "pm.test('Returns id, email, emailVerified=false', function () {",
+                  "pm.test('Returns id, email, role, emailVerified=false', function () {",
                   "    pm.expect(body.id).to.be.a('string');",
                   "    pm.expect(body.email).to.eql(pm.environment.get('testEmail'));",
+                  "    pm.expect(body.role).to.eql('JOB_SEEKER');",
                   "    pm.expect(body.emailVerified).to.eql(false);",
                   "    pm.expect(body.status).to.eql('PENDING');",
                   "});",
@@ -78,7 +79,52 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"confirmPassword\": \"{{testPassword}}\",\n  \"firstName\": \"{{firstName}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"phone\": \"{{phone}}\"\n}"
+              "raw": "{\n  \"userType\": \"JOB_SEEKER\",\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"confirmPassword\": \"{{testPassword}}\",\n  \"firstName\": \"{{firstName}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"phone\": \"{{phone}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Register Employer",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('employerEmail', `hr.acme.${Date.now()}@gmail.com`);",
+                  "console.log('Registering employer:', pm.environment.get('employerEmail'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Employer registered', function () {",
+                  "    pm.expect(body.email).to.eql(pm.environment.get('employerEmail'));",
+                  "    pm.expect(body.role).to.eql('EMPLOYER');",
+                  "    pm.expect(body.emailVerified).to.eql(false);",
+                  "});",
+                  "pm.environment.set('employerUserId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userType\": \"EMPLOYER\",\n  \"email\": \"{{employerEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"confirmPassword\": \"{{testPassword}}\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"phone\": \"{{phone}}\",\n  \"companyName\": \"Acme Ltd\"\n}"
             },
             "url": "{{baseUrl}}/api/auth/register"
           }
@@ -161,9 +207,82 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"otp\": \"{{emailOtp}}\"\n}"
+              "raw": "{\n  \"otp\": \"{{emailOtp}}\"\n}"
             },
-            "url": "{{baseUrl}}/api/auth/verify-email"
+            "url": "{{baseUrl}}/api/auth/verify-email/{{testEmail}}"
+          }
+        },
+        {
+          "name": "Resend Employer Email Verification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{employerEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/verify-email/resend"
+          }
+        },
+        {
+          "name": "Verify Employer Email",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const otp = pm.environment.get('employerEmailOtp');",
+                  "if (!otp) {",
+                  "    throw new Error('Set employerEmailOtp in environment — 6-digit code from inbox or app logs');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Employer email verified', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.emailVerified).to.eql(true);",
+                  "    pm.expect(body.status).to.eql('ACTIVE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otp\": \"{{employerEmailOtp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/verify-email/{{employerEmail}}"
           }
         }
       ]
@@ -211,6 +330,42 @@
             },
             "url": "{{baseUrl}}/api/auth/login"
           }
+        },
+        {
+          "name": "Login Employer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Returns employer JWT', function () {",
+                  "    pm.expect(body.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.expect(body.email).to.eql(pm.environment.get('employerEmail'));",
+                  "    pm.expect(body.role).to.eql('EMPLOYER');",
+                  "});",
+                  "pm.environment.set('employerAccessToken', body.accessToken);",
+                  "pm.environment.set('employerUserId', body.userId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{employerEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
         }
       ]
     },
@@ -242,6 +397,32 @@
           }
         },
         {
+          "name": "Get Job Seeker Dashboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Dashboard has completeness and stats', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.profileCompleteness).to.be.an('object');",
+                  "    pm.expect(body.profileCompleteness.percentComplete).to.be.a('number');",
+                  "    pm.expect(body.stats.applicationsCount).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/job-seekers/me/dashboard"
+          }
+        },
+        {
           "name": "Update Onboarding",
           "event": [
             {
@@ -270,10 +451,7 @@
                 { "key": "job", "value": "Software Engineer", "type": "text" },
                 { "key": "qualification", "value": "BSc Computer Science", "type": "text" },
                 { "key": "about", "value": "Backend developer with Java experience.", "type": "text" },
-                { "key": "openToWork", "value": "true", "type": "text" },
-                { "key": "addressState", "value": "Lagos", "type": "text" },
-                { "key": "addressLga", "value": "Ikeja", "type": "text" },
-                { "key": "addressLine", "value": "Allen Avenue", "type": "text" }
+                { "key": "openToWork", "value": "true", "type": "text" }
               ]
             },
             "url": "{{baseUrl}}/api/job-seekers/me/onboarding"
@@ -339,7 +517,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nin\": \"12345678901\",\n  \"birthday\": \"1995-06-15\",\n  \"gender\": \"Female\",\n  \"addressNo\": \"12\",\n  \"addressLine\": \"Allen Avenue\",\n  \"addressLga\": \"Ikeja\",\n  \"addressState\": \"Lagos\"\n}"
+              "raw": "{\n  \"nin\": \"12345678901\",\n  \"birthday\": \"1995-06-15\",\n  \"gender\": \"Female\",\n  \"address\": \"12 Allen Avenue, Ikeja, Lagos\",\n  \"addressNo\": \"12\",\n  \"addressLine\": \"Allen Avenue\",\n  \"addressLga\": \"Ikeja\",\n  \"addressState\": \"Lagos\"\n}"
             },
             "url": "{{baseUrl}}/api/job-seekers/me/kyc"
           }
@@ -355,8 +533,12 @@
                   "pm.test('Status is 200', function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test('Returns array', function () {",
-                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "pm.test('Returns paginated job seekers', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.content).to.be.an('array');",
+                  "    pm.expect(body.page).to.eql(0);",
+                  "    pm.expect(body.size).to.be.a('number');",
+                  "    pm.expect(body.totalElements).to.be.a('number');",
                   "});"
                 ]
               }
@@ -364,7 +546,48 @@
           ],
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/api/job-seekers"
+            "url": {
+              "raw": "{{baseUrl}}/api/job-seekers?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "job-seekers"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Employers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns paginated employers', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.content).to.be.an('array');",
+                  "    pm.expect(body.totalElements).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/employers?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employers"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
           }
         },
         {
@@ -388,6 +611,489 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/job-seekers/{{userId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04b - Employer Profile",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+        ]
+      },
+      "item": [
+        {
+          "name": "Get My Employer Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/employers/me"
+          }
+        },
+        {
+          "name": "Get Employer Dashboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Dashboard has companyLinked and stats', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.companyLinked).to.eql(false);",
+                  "    pm.expect(body.stats.activeJobsCount).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/employers/me/dashboard"
+          }
+        },
+        {
+          "name": "Update Employer Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Profile updated', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.companyName).to.eql('Acme Ltd');",
+                  "    pm.expect(body.jobTitle).to.eql('HR Manager');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Acme Ltd\",\n  \"jobTitle\": \"HR Manager\"\n}"
+            },
+            "url": "{{baseUrl}}/api/employers/me/profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04d - Company",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+        ]
+      },
+      "item": [
+        {
+          "name": "Create Company",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Company created', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.name).to.eql('Acme Ltd');",
+                  "    pm.expect(body.id).to.be.a('string');",
+                  "    pm.environment.set('companyId', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Ltd\",\n  \"description\": \"HR technology company\",\n  \"industry\": \"Technology\",\n  \"website\": \"https://acme.example.com\",\n  \"address\": \"12 Allen Avenue, Ikeja, Lagos\"\n}"
+            },
+            "url": "{{baseUrl}}/api/companies"
+          }
+        },
+        {
+          "name": "Get My Company",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns linked company', function () {",
+                  "    pm.expect(pm.response.json().name).to.eql('Acme Ltd');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/companies/me"
+          }
+        },
+        {
+          "name": "Update My Company",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Description updated', function () {",
+                  "    pm.expect(pm.response.json().description).to.eql('Updated description');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": "{{baseUrl}}/api/companies/me"
+          }
+        },
+        {
+          "name": "Get Employer Dashboard After Company Link",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Company is linked', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.companyLinked).to.eql(true);",
+                  "    pm.expect(body.companyName).to.eql('Acme Ltd');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/employers/me/dashboard"
+          }
+        },
+        {
+          "name": "Get Company By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/companies/{{companyId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04e - Jobs",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+        ]
+      },
+      "item": [
+        {
+          "name": "Create Job (Draft)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Job created as draft', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql('DRAFT');",
+                  "    pm.expect(body.title).to.eql('Backend Engineer');",
+                  "    pm.environment.set('jobId', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Backend Engineer\",\n  \"description\": \"Build and maintain REST APIs for the Skytouch platform.\",\n  \"requirements\": \"3+ years Java, Spring Boot, PostgreSQL\",\n  \"employmentType\": \"FULL_TIME\",\n  \"workMode\": \"HYBRID\",\n  \"salaryMin\": 300000,\n  \"salaryMax\": 600000,\n  \"locationState\": \"Lagos\",\n  \"locationLga\": \"Ikeja\"\n}"
+            },
+            "url": "{{baseUrl}}/api/jobs"
+          }
+        },
+        {
+          "name": "Publish Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Job is active', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('ACTIVE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/jobs/{{jobId}}/publish"
+          }
+        },
+        {
+          "name": "List My Company Jobs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns paginated company jobs', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.content).to.be.an('array').that.is.not.empty;",
+                  "    pm.expect(body.totalElements).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/me?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "me"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Jobs (Marketplace)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns active jobs page', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.content).to.be.an('array');",
+                  "    pm.expect(body.totalElements).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs?keyword=Backend&employmentType=FULL_TIME&workMode=HYBRID&state=Lagos&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs"],
+              "query": [
+                { "key": "keyword", "value": "Backend" },
+                { "key": "employmentType", "value": "FULL_TIME" },
+                { "key": "workMode", "value": "HYBRID" },
+                { "key": "state", "value": "Lagos" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Job By ID",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns published job', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('ACTIVE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/jobs/{{jobId}}"
+          }
+        },
+        {
+          "name": "Get Employer Dashboard After Job Publish",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Active jobs count updated', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.stats.activeJobsCount).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/employers/me/dashboard"
+          }
+        },
+        {
+          "name": "Close Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Job is closed', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('CLOSED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/jobs/{{jobId}}/close"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04c - Admin Dashboard",
+      "item": [
+        {
+          "name": "Get Admin Dashboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns user counts', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.totalUsers).to.be.a('number');",
+                  "    pm.expect(body.jobSeekers).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminAccessToken}}", "type": "string" }]
+            },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/dashboard"
           }
         }
       ]
@@ -480,36 +1186,7 @@
       ]
     },
     {
-      "name": "06 - Health Check",
-      "item": [
-        {
-          "name": "Auth Health",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status is 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test('Service running', function () {",
-                  "    pm.expect(pm.response.text()).to.include('running');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": { "type": "noauth" },
-            "method": "GET",
-            "url": "{{baseUrl}}/api/auth/health"
-          }
-        }
-      ]
-    },
-    {
-      "name": "07 - Negative Tests",
+      "name": "06 - Negative Tests",
       "item": [
         {
           "name": "Protected route without token returns 401",
@@ -583,7 +1260,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"confirmPassword\": \"{{testPassword}}\",\n  \"firstName\": \"{{firstName}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"phone\": \"{{phone}}\"\n}"
+              "raw": "{\n  \"userType\": \"JOB_SEEKER\",\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"confirmPassword\": \"{{testPassword}}\",\n  \"firstName\": \"{{firstName}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"phone\": \"{{phone}}\"\n}"
             },
             "url": "{{baseUrl}}/api/auth/register"
           }
@@ -639,9 +1316,9 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"otp\": \"000000\"\n}"
+              "raw": "{\n  \"otp\": \"000000\"\n}"
             },
-            "url": "{{baseUrl}}/api/auth/verify-email"
+            "url": "{{baseUrl}}/api/auth/verify-email/{{testEmail}}"
           }
         }
       ]

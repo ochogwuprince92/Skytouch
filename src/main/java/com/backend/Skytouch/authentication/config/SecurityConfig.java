@@ -2,6 +2,7 @@ package com.backend.Skytouch.authentication.config;
 
 import com.backend.Skytouch.authentication.security.JwtAuthenticationEntryPoint;
 import com.backend.Skytouch.authentication.security.SessionAuthenticationFilter;
+import com.backend.Skytouch.common.config.StorageProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -22,7 +23,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties({AuthProperties.class, JwtProperties.class})
+@EnableConfigurationProperties({AuthProperties.class, JwtProperties.class, StorageProperties.class})
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -42,7 +43,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/uploads/**"
                         ).permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()

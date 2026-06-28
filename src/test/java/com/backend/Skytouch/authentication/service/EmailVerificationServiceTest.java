@@ -2,7 +2,6 @@ package com.backend.Skytouch.authentication.service;
 
 import com.backend.Skytouch.authentication.apimodel.EmailVerifiedResponse;
 import com.backend.Skytouch.authentication.apimodel.OtpSentResponse;
-import com.backend.Skytouch.authentication.apimodel.VerifyOtpRequest;
 import com.backend.Skytouch.authentication.config.AuthProperties;
 import com.backend.Skytouch.authentication.repository.AuthenticationRepository;
 import com.backend.Skytouch.common.enums.UserRole;
@@ -75,7 +74,7 @@ class EmailVerificationServiceTest {
         when(authenticationRepository.findByEmail("seeker@example.com")).thenReturn(Optional.of(pendingUser));
 
         EmailVerifiedResponse response = emailVerificationService.verifyEmail(
-                new VerifyOtpRequest("seeker@example.com", "123456"));
+                "seeker@example.com", "123456");
 
         verify(otpService).verifyEmailVerificationOtp(pendingUser.getId(), "123456");
         verify(authenticationRepository).save(pendingUser);
@@ -90,7 +89,7 @@ class EmailVerificationServiceTest {
         when(authenticationRepository.findByEmail("seeker@example.com")).thenReturn(Optional.of(pendingUser));
 
         assertThatThrownBy(() -> emailVerificationService.verifyEmail(
-                new VerifyOtpRequest("seeker@example.com", "123456")))
+                "seeker@example.com", "123456"))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Email is already verified");
 

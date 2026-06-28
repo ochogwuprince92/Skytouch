@@ -2,6 +2,8 @@ server:
   port: ${PORT:8083}
 
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: Skytouch
   profiles:
@@ -45,9 +47,17 @@ app:
       max-attempts: 5
     session:
       expiration-ms: 86400000
-
+  storage:
+    cloudinary-enabled: ${CLOUDINARY_ENABLED:true}
+    local-upload-dir: ${LOCAL_UPLOAD_DIR:uploads}
 
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
+
+address:
+  validation:
+    enabled: ${ADDRESS_VALIDATION_ENABLED:false}
+    api-key: ${GOOGLE_ADDRESS_API_KEY:}
+    endpoint: ${GOOGLE_ADDRESS_VALIDATION_ENDPOINT:https://maps.googleapis.com/maps/api/geocode/json}
