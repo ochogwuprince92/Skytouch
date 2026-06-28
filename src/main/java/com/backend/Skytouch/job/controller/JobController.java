@@ -1,5 +1,9 @@
 package com.backend.Skytouch.job.controller;
 
+import com.backend.Skytouch.application.apimodel.ApplicationCreateRequest;
+import com.backend.Skytouch.application.apimodel.ApplicationResponse;
+import com.backend.Skytouch.application.apimodel.ApplicationStatusUpdateRequest;
+import com.backend.Skytouch.application.service.ApplicationService;
 import com.backend.Skytouch.authentication.security.SecurityUtils;
 import com.backend.Skytouch.common.apimodel.PageResponse;
 import com.backend.Skytouch.common.enums.EmploymentType;
@@ -23,6 +27,7 @@ import java.util.UUID;
 public class JobController {
 
     private final JobService jobService;
+    private final ApplicationService applicationService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -74,5 +79,34 @@ public class JobController {
     @PreAuthorize("hasRole('EMPLOYER')")
     public JobResponse close(@PathVariable UUID id) {
         return jobService.close(SecurityUtils.getCurrentUser().getEmail(), id);
+    }
+
+    @PostMapping("/{id}/applications")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('JOB_SEEKER')")
+    public ApplicationResponse apply(
+            @PathVariable UUID id,
+            @Valid @RequestBody(required = false) ApplicationCreateRequest request) {
+        return applicationService.apply(SecurityUtils.getCurrentUser().getEmail(), id, request);
+    }
+
+    @GetMapping("/{id}/applications")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public PageResponse<ApplicationResponse> getJobApplications(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return applicationService.findApplicationsForJob(
+                SecurityUtils.getCurrentUser().getEmail(), id, page, size);
+    }
+
+    @PatchMapping("/{id}/applications/{applicationId}")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ApplicationResponse updateApplicationStatus(
+            @PathVariable UUID id,
+            @PathVariable UUID applicationId,
+            @Valid @RequestBody ApplicationStatusUpdateRequest request) {
+        return applicationService.updateStatus(
+                SecurityUtils.getCurrentUser().getEmail(), id, applicationId, request);
     }
 }

@@ -2,6 +2,7 @@ package com.backend.Skytouch.jobseeker.service;
 
 import com.backend.Skytouch.common.address.AddressValidationService;
 import com.backend.Skytouch.common.address.ValidatedAddress;
+import com.backend.Skytouch.application.service.ApplicationService;
 import com.backend.Skytouch.common.apimodel.PageResponse;
 import com.backend.Skytouch.common.enums.UserRole;
 import com.backend.Skytouch.common.exception.BadRequestException;
@@ -39,6 +40,7 @@ public class JobSeekerService {
     private final FileStorageService fileStorageService;
     private final AddressValidationService addressValidationService;
     private final JobSeekerProfileCompletenessCalculator profileCompletenessCalculator;
+    private final ApplicationService applicationService;
 
     @Transactional(readOnly = true)
     public PageResponse<JobSeekerResponse> findAll(int page, int size) {
@@ -74,7 +76,7 @@ public class JobSeekerService {
                 .openToWork(profile != null ? profile.getOpenToWork() : false)
                 .profileCompleteness(profileCompletenessCalculator.calculate(user, profile))
                 .stats(JobSeekerDashboardStats.builder()
-                        .applicationsCount(0)
+                        .applicationsCount(applicationService.countApplicationsForSeeker(email))
                         .savedJobsCount(0)
                         .interviewsCount(0)
                         .build())

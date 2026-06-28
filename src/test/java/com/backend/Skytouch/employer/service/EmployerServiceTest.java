@@ -7,6 +7,7 @@ import com.backend.Skytouch.common.profile.EmployerProfileCompletenessCalculator
 import com.backend.Skytouch.common.profile.ProfileCompleteness;
 import com.backend.Skytouch.common.profile.ProfileStep;
 import com.backend.Skytouch.company.entity.Company;
+import com.backend.Skytouch.application.service.ApplicationService;
 import com.backend.Skytouch.common.enums.CompanyStatus;
 import com.backend.Skytouch.common.enums.JobStatus;
 import com.backend.Skytouch.employer.apimodel.EmployerProfileRequest;
@@ -47,6 +48,9 @@ class EmployerServiceTest {
 
     @Mock
     private JobRepository jobRepository;
+
+    @Mock
+    private ApplicationService applicationService;
 
     @InjectMocks
     private EmployerService employerService;
@@ -199,11 +203,13 @@ class EmployerServiceTest {
         when(employerRepository.findByUser_Id(userId)).thenReturn(Optional.of(profile));
         when(jobRepository.countByCompany_IdAndStatus(companyId, JobStatus.ACTIVE)).thenReturn(2L);
         when(jobRepository.countByCompany_IdAndStatus(companyId, JobStatus.DRAFT)).thenReturn(1L);
+        when(applicationService.countApplicationsForCompany(companyId)).thenReturn(5L);
         when(profileCompletenessCalculator.calculate(user, profile, true)).thenReturn(completeness);
 
         var result = employerService.getDashboard("employer@example.com");
 
         assertThat(result.getStats().getActiveJobsCount()).isEqualTo(2);
         assertThat(result.getStats().getDraftJobsCount()).isEqualTo(1);
+        assertThat(result.getStats().getTotalApplicantsCount()).isEqualTo(5);
     }
 }
