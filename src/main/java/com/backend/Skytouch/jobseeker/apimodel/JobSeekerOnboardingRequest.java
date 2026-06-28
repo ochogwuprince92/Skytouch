@@ -22,13 +22,4 @@ public class JobSeekerOnboardingRequest {
     private String about;
 
     private Boolean openToWork;
-
-    @Size(max = 100, message = "Address state must not exceed 100 characters")
-    private String addressState;
-
-    @Size(max = 100, message = "Address LGA must not exceed 100 characters")
-    private String addressLga;
-
-    @Size(max = 255, message = "Address line must not exceed 255 characters")
-    private String addressLine;
 }

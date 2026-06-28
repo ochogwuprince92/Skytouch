@@ -20,18 +20,11 @@ public class AuthenticationController {
     private final EmailVerificationService emailVerificationService;
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterJobSeekerResponse> register(
-            @Valid @RequestBody RegisterJobSeekerRequest request) {
-        log.info("Register attempt for email: {}", request.getEmail());
+    public ResponseEntity<RegisterResponse> register(
+            @Valid @RequestBody RegisterRequest request) {
+        log.info("Register attempt for email: {} userType: {}", request.getEmail(), request.getUserType());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(authenticationService.register(request));
-    }
-
-    @PostMapping("/verify-email")
-    public ResponseEntity<EmailVerifiedResponse> verifyEmail(
-            @Valid @RequestBody VerifyOtpRequest request) {
-        log.info("Email verification for email: {}", request.getEmail());
-        return ResponseEntity.ok(emailVerificationService.verifyEmail(request));
     }
 
     @PostMapping("/verify-email/resend")
@@ -40,6 +33,14 @@ public class AuthenticationController {
         log.info("Resend verification for email: {}", request.getEmail());
         return ResponseEntity.ok(
                 emailVerificationService.resendVerificationCode(request.getEmail()));
+    }
+
+    @PostMapping("/verify-email/{email}")
+    public ResponseEntity<EmailVerifiedResponse> verifyEmail(
+            @PathVariable String email,
+            @Valid @RequestBody VerifyOtpRequest request) {
+        log.info("Email verification for email: {}", email);
+        return ResponseEntity.ok(emailVerificationService.verifyEmail(email, request.getOtp()));
     }
 
     @PostMapping("/login")
@@ -61,10 +62,5 @@ public class AuthenticationController {
             @Valid @RequestBody ResetPasswordRequest request) {
         log.info("Reset password attempt");
         return ResponseEntity.ok(authenticationService.resetPassword(request));
-    }
-
-    @GetMapping("/health")
-    public ResponseEntity<String> health() {
-        return ResponseEntity.ok("Auth service is running");
     }
 }

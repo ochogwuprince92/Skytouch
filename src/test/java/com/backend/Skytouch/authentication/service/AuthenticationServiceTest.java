@@ -2,13 +2,23 @@ package com.backend.Skytouch.authentication.service;
 
 import com.backend.Skytouch.authentication.apimodel.AuthResponse;
 import com.backend.Skytouch.authentication.apimodel.LoginRequest;
+import com.backend.Skytouch.authentication.apimodel.OtpSentResponse;
+import com.backend.Skytouch.authentication.apimodel.RegisterRequest;
 import com.backend.Skytouch.authentication.config.AuthProperties;
 import com.backend.Skytouch.authentication.repository.AuthenticationRepository;
 import com.backend.Skytouch.authentication.security.PasswordVerifier;
 import com.backend.Skytouch.common.enums.UserRole;
 import com.backend.Skytouch.common.enums.UserStatus;
+import com.backend.Skytouch.common.enums.UserType;
 import com.backend.Skytouch.common.exception.UnauthorizedException;
+import com.backend.Skytouch.common.mapper.EmployerMapper;
+import com.backend.Skytouch.common.mapper.JobSeekerMapper;
+import com.backend.Skytouch.employer.entity.Employer;
+import com.backend.Skytouch.employer.repository.EmployerRepository;
+import com.backend.Skytouch.jobseeker.entity.JobSeeker;
+import com.backend.Skytouch.jobseeker.repository.JobSeekerRepository;
 import com.backend.Skytouch.user.entity.Users;
+import com.backend.Skytouch.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +45,11 @@ class AuthenticationServiceTest {
     @Mock private SessionService sessionService;
     @Mock private EmailVerificationService emailVerificationService;
     @Mock private AuthProperties authProperties;
+    @Mock private UserRepository userRepository;
+    @Mock private JobSeekerRepository jobSeekerRepository;
+    @Mock private EmployerRepository employerRepository;
+    @Mock private JobSeekerMapper jobSeekerMapper;
+    @Mock private EmployerMapper employerMapper;
 
     @InjectMocks
     private AuthenticationService authenticationService;
@@ -52,6 +67,41 @@ class AuthenticationServiceTest {
                 .emailVerified(true)
                 .active(true)
                 .build();
+    }
+
+    // ─── Register ───────────────────────────────────────────────────────────
+
+    @Test
+    void register_shouldCreateJobSeeker_whenUserTypeIsJobSeeker() {
+        RegisterRequest request = new RegisterRequest();
+        request.setUserType(UserType.JOB_SEEKER);
+        request.setEmail("seeker@example.com");
+        request.setPassword("Password123!");
+        request.setConfirmPassword("Password123!");
+        request.setPhone("+2348012345678");
+
+        Users savedUser = Users.builder()
+                .id(UUID.randomUUID())
+                .email(request.getEmail())
+                .role(UserRole.JOB_SEEKER)
+                .status(UserStatus.PENDING)
+                .emailVerified(false)
+                .active(true)
+                .build();
+        JobSeeker profile = JobSeeker.builder().user(savedUser).status(UserStatus.PENDING).build();
+
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+        when(passwordEncoder.encode(request.getPassword())).thenReturn("encoded");
+        when(userRepository.save(any(Users.class))).thenReturn(savedUser);
+        when(jobSeekerMapper.toEntity(request, savedUser)).thenReturn(profile);
+        when(emailVerificationService.sendVerificationCode(savedUser))
+                .thenReturn(OtpSentResponse.builder().message("sent").expiresIn(600000L).build());
+
+        var response = authenticationService.register(request);
+
+        assertThat(response.getRole()).isEqualTo(UserRole.JOB_SEEKER);
+        verify(jobSeekerRepository).save(profile);
+        verify(employerRepository, never()).save(any());
     }
 
     // ─── Login ────────────────────────────────────────────────────────────────

@@ -1,15 +1,13 @@
 package com.backend.Skytouch.jobseeker.controller;
 
 import com.backend.Skytouch.authentication.security.SecurityUtils;
+import com.backend.Skytouch.jobseeker.apimodel.JobSeekerDashboardResponse;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerKycRequest;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerOnboardingRequest;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerResponse;
-import com.backend.Skytouch.authentication.apimodel.RegisterJobSeekerRequest;
-import com.backend.Skytouch.authentication.apimodel.RegisterJobSeekerResponse;
 import com.backend.Skytouch.jobseeker.service.JobSeekerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,12 +25,14 @@ public class JobSeekerController {
     public JobSeekerResponse getMe() {
         return jobSeekerService.findByEmail(SecurityUtils.getCurrentUser().getEmail());
     }
-    @PatchMapping(value = "/me/onboarding",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
-    )
-    public JobSeekerResponse updateOnboarding(
-            @Valid @ModelAttribute JobSeekerOnboardingRequest request) {
 
+    @GetMapping("/me/dashboard")
+    public JobSeekerDashboardResponse getDashboard() {
+        return jobSeekerService.getDashboard(SecurityUtils.getCurrentUser().getEmail());
+    }
+
+    @PatchMapping(value = "/me/onboarding", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public JobSeekerResponse updateOnboarding(@Valid @ModelAttribute JobSeekerOnboardingRequest request) {
         return jobSeekerService.updateOnboarding(
                 SecurityUtils.getCurrentUser().getEmail(),
                 request);

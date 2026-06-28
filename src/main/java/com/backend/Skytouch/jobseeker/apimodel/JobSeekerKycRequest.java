@@ -33,4 +33,8 @@ public class JobSeekerKycRequest {
 
     @Size(max = 100, message = "Address state must not exceed 100 characters")
     private String addressState;
+
+    /** Free-text address validated via Google Geocoding when configured. */
+    @Size(max = 500, message = "Address must not exceed 500 characters")
+    private String address;
 }

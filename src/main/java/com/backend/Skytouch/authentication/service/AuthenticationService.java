@@ -7,12 +7,16 @@ import com.backend.Skytouch.authentication.security.PasswordVerifier;
 import com.backend.Skytouch.common.enums.OtpPurpose;
 import com.backend.Skytouch.common.enums.UserRole;
 import com.backend.Skytouch.common.enums.UserStatus;
+import com.backend.Skytouch.common.enums.UserType;
 import com.backend.Skytouch.common.exception.BadRequestException;
 import com.backend.Skytouch.common.exception.ConflictException;
 import com.backend.Skytouch.common.exception.ResourceNotFoundException;
 import com.backend.Skytouch.common.exception.UnauthorizedException;
+import com.backend.Skytouch.common.mapper.EmployerMapper;
 import com.backend.Skytouch.common.mapper.JobSeekerMapper;
 import com.backend.Skytouch.common.utils.EmailUtils;
+import com.backend.Skytouch.employer.entity.Employer;
+import com.backend.Skytouch.employer.repository.EmployerRepository;
 import com.backend.Skytouch.jobseeker.entity.JobSeeker;
 import com.backend.Skytouch.jobseeker.repository.JobSeekerRepository;
 import com.backend.Skytouch.user.entity.Users;
@@ -29,7 +33,9 @@ public class AuthenticationService {
     private final AuthenticationRepository authenticationRepository;
     private final UserRepository userRepository;
     private final JobSeekerRepository jobSeekerRepository;
+    private final EmployerRepository employerRepository;
     private final JobSeekerMapper jobSeekerMapper;
+    private final EmployerMapper employerMapper;
     private final PasswordEncoder passwordEncoder;
     private final PasswordVerifier passwordVerifier;
     private final OtpService otpService;
@@ -40,7 +46,7 @@ public class AuthenticationService {
     // ─── Register ─────────────────────────────────────────────────────────────
 
     @Transactional
-    public RegisterJobSeekerResponse register(RegisterJobSeekerRequest request) {
+    public RegisterResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new ConflictException("Email already registered: " + request.getEmail());
         }
@@ -49,21 +55,28 @@ public class AuthenticationService {
             throw new BadRequestException("Passwords do not match");
         }
 
+        UserRole role = request.getUserType().toUserRole();
+
         Users user = Users.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(UserRole.JOB_SEEKER)
+                .role(role)
                 .status(UserStatus.PENDING)
                 .build();
 
         Users savedUser = userRepository.save(user);
 
-        JobSeeker profile = jobSeekerMapper.toEntity(request, savedUser);
-        jobSeekerRepository.save(profile);
+        if (request.getUserType() == UserType.JOB_SEEKER) {
+            JobSeeker profile = jobSeekerMapper.toEntity(request, savedUser);
+            jobSeekerRepository.save(profile);
+        } else {
+            Employer profile = employerMapper.toEntity(request, savedUser);
+            employerRepository.save(profile);
+        }
 
         var verification = emailVerificationService.sendVerificationCode(savedUser);
 
-        return jobSeekerMapper.toRegisterResponse(savedUser, verification);
+        return toRegisterResponse(savedUser, verification);
     }
 
     // ─── Login ────────────────────────────────────────────────────────────────
@@ -154,5 +167,19 @@ public class AuthenticationService {
         if (user.getStatus() == UserStatus.SUSPENDED) {
             throw new UnauthorizedException("Account is suspended");
         }
+    }
+
+    private RegisterResponse toRegisterResponse(Users user, OtpSentResponse verification) {
+        return RegisterResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .status(user.getStatus())
+                .emailVerified(user.getEmailVerified())
+                .active(user.getActive())
+                .createdAt(user.getCreatedAt())
+                .verificationMessage(verification.getMessage())
+                .verificationExpiresIn(verification.getExpiresIn())
+                .build();
     }
 }

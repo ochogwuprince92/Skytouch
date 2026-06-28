@@ -1,20 +1,19 @@
 package com.backend.Skytouch.common.mapper;
 
-import com.backend.Skytouch.authentication.apimodel.OtpSentResponse;
+import com.backend.Skytouch.authentication.apimodel.RegisterRequest;
 import com.backend.Skytouch.common.enums.UserStatus;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerKycRequest;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerOnboardingRequest;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerResponse;
-import com.backend.Skytouch.authentication.apimodel.RegisterJobSeekerRequest;
-import com.backend.Skytouch.authentication.apimodel.RegisterJobSeekerResponse;
 import com.backend.Skytouch.jobseeker.entity.JobSeeker;
 import com.backend.Skytouch.user.entity.Users;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 public class JobSeekerMapper {
 
-    public JobSeeker toEntity(RegisterJobSeekerRequest request, Users user) {
+    public JobSeeker toEntity(RegisterRequest request, Users user) {
         return JobSeeker.builder()
                 .user(user)
                 .status(UserStatus.PENDING)
@@ -41,15 +40,6 @@ public class JobSeekerMapper {
         }
         if (request.getOpenToWork() != null) {
             profile.setOpenToWork(request.getOpenToWork());
-        }
-        if (request.getAddressState() != null) {
-            profile.setAddressState(request.getAddressState());
-        }
-        if (request.getAddressLga() != null) {
-            profile.setAddressLga(request.getAddressLga());
-        }
-        if (request.getAddressLine() != null) {
-            profile.setAddressLine(request.getAddressLine());
         }
     }
 
@@ -107,18 +97,5 @@ public class JobSeekerMapper {
         }
 
         return builder.build();
-    }
-
-    public RegisterJobSeekerResponse toRegisterResponse(Users user, OtpSentResponse verification) {
-        return RegisterJobSeekerResponse.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .status(user.getStatus())
-                .emailVerified(user.getEmailVerified())
-                .active(user.getActive())
-                .createdAt(user.getCreatedAt())
-                .verificationMessage(verification.getMessage())
-                .verificationExpiresIn(verification.getExpiresIn())
-                .build();
     }
 }

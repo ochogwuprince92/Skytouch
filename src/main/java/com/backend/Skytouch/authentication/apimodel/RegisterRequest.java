@@ -1,8 +1,11 @@
 package com.backend.Skytouch.authentication.apimodel;
 
-import jakarta.persistence.Column;
+import com.backend.Skytouch.common.enums.UserType;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -12,7 +15,16 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class RegisterJobSeekerRequest {
+public class RegisterRequest {
+
+    @NotNull(message = "User type is required")
+    @Schema(
+            description = "Account type to register",
+            allowableValues = {"JOB_SEEKER", "EMPLOYER"},
+            example = "JOB_SEEKER"
+    )
+    @JsonAlias("role")
+    private UserType userType;
 
     @NotBlank(message = "Email is required")
     @Email(message = "Email must be valid")
@@ -39,6 +51,9 @@ public class RegisterJobSeekerRequest {
             regexp = "^\\+?[0-9]{10,15}$",
             message = "Phone number must contain 10 to 15 digits and may start with +"
     )
-    @Column(nullable = false)
     private String phone;
+
+    /** Optional at signup; used when userType is EMPLOYER. */
+    @Size(max = 255, message = "Company name must not exceed 255 characters")
+    private String companyName;
 }
