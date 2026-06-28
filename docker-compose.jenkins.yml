@@ -1,0 +1,37 @@
+services:
+  postgres-ci:
+    image: postgres:16-alpine
+    container_name: skytouch-jenkins-postgres
+    env_file:
+      - .env.jenkins
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  jenkins:
+    build: ./jenkins
+    container_name: skytouch-jenkins
+    privileged: true
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    env_file:
+      - .env.jenkins
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /run/podman/podman.sock:/var/run/podman.sock
+    environment:
+      CONTAINER_HOST: unix:///var/run/podman.sock
+    depends_on:
+      postgres-ci:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  jenkins_home:

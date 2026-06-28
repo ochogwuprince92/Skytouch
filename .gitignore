@@ -1,4 +1,6 @@
 HELP.md
+.env
+.env.jenkins
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -12,13 +14,15 @@ target/
 .settings
 .springBeans
 .sts4-cache
+*.application.yml
+*.application-local.yml
 
 ### IntelliJ IDEA ###
 .idea
 *.iws
 *.iml
 *.ipr
-
+*.gitignore
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
@@ -31,3 +35,4 @@ build/
 
 ### VS Code ###
 .vscode/
+src/main/resources/application-local.yml
