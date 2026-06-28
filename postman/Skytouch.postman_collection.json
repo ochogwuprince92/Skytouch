@@ -1065,6 +1065,187 @@
       ]
     },
     {
+      "name": "04f - Applications",
+      "item": [
+        {
+          "name": "Apply to Job",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Application submitted', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql('SUBMITTED');",
+                  "    pm.environment.set('applicationId', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coverLetter\": \"I am excited to apply for this role.\"\n}"
+            },
+            "url": "{{baseUrl}}/api/jobs/{{jobId}}/applications"
+          }
+        },
+        {
+          "name": "List My Applications",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns paginated applications', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.content).to.be.an('array').that.is.not.empty;",
+                  "    pm.expect(body.totalElements).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/applications/me?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications", "me"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Job Applicants (Employer)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns applicants', function () {",
+                  "    pm.expect(pm.response.json().content).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/{{jobId}}/applications?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "{{jobId}}", "applications"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Application Status",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Status updated to REVIEWING', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('REVIEWING');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"REVIEWING\"\n}"
+            },
+            "url": "{{baseUrl}}/api/jobs/{{jobId}}/applications/{{applicationId}}"
+          }
+        },
+        {
+          "name": "Get Job Seeker Dashboard After Apply",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Applications count updated', function () {",
+                  "    pm.expect(pm.response.json().stats.applicationsCount).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/job-seekers/me/dashboard"
+          }
+        }
+      ]
+    },
+    {
       "name": "04c - Admin Dashboard",
       "item": [
         {

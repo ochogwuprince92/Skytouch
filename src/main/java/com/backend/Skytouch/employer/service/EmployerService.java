@@ -1,5 +1,6 @@
 package com.backend.Skytouch.employer.service;
 
+import com.backend.Skytouch.application.service.ApplicationService;
 import com.backend.Skytouch.common.apimodel.PageResponse;
 import com.backend.Skytouch.common.enums.JobStatus;
 import com.backend.Skytouch.common.enums.UserRole;
@@ -36,6 +37,7 @@ public class EmployerService {
     private final EmployerMapper employerMapper;
     private final EmployerProfileCompletenessCalculator profileCompletenessCalculator;
     private final JobRepository jobRepository;
+    private final ApplicationService applicationService;
 
     @Transactional(readOnly = true)
     public PageResponse<EmployerResponse> findAll(int page, int size) {
@@ -67,10 +69,12 @@ public class EmployerService {
         boolean companyLinked = profile != null && profile.getCompany() != null;
         long activeJobsCount = 0;
         long draftJobsCount = 0;
+        long totalApplicantsCount = 0;
         if (companyLinked) {
             UUID companyId = profile.getCompany().getId();
             activeJobsCount = jobRepository.countByCompany_IdAndStatus(companyId, JobStatus.ACTIVE);
             draftJobsCount = jobRepository.countByCompany_IdAndStatus(companyId, JobStatus.DRAFT);
+            totalApplicantsCount = applicationService.countApplicationsForCompany(companyId);
         }
 
         return EmployerDashboardResponse.builder()
@@ -81,7 +85,7 @@ public class EmployerService {
                 .profileCompleteness(profileCompletenessCalculator.calculate(user, profile, companyLinked))
                 .stats(EmployerDashboardStats.builder()
                         .activeJobsCount(activeJobsCount)
-                        .totalApplicantsCount(0)
+                        .totalApplicantsCount(totalApplicantsCount)
                         .draftJobsCount(draftJobsCount)
                         .build())
                 .build();
