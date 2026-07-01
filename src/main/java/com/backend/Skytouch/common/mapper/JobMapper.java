@@ -65,6 +65,10 @@ public class JobMapper {
     }
 
     public JobResponse toResponse(Job job) {
+        return toResponse(job, null);
+    }
+
+    public JobResponse toResponse(Job job, Boolean saved) {
         Company company = job.getCompany();
         return JobResponse.builder()
                 .id(job.getId())
@@ -85,6 +89,7 @@ public class JobMapper {
                 .closedAt(job.getClosedAt())
                 .createdAt(job.getCreatedAt())
                 .updatedAt(job.getUpdatedAt())
+                .saved(saved)
                 .build();
     }
 }

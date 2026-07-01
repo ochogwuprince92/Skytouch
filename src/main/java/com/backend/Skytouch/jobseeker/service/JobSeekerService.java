@@ -1,8 +1,12 @@
 package com.backend.Skytouch.jobseeker.service;
 
+import com.backend.Skytouch.application.service.ApplicationService;
 import com.backend.Skytouch.common.address.AddressValidationService;
 import com.backend.Skytouch.common.address.ValidatedAddress;
-import com.backend.Skytouch.application.service.ApplicationService;
+import com.backend.Skytouch.interview.service.InterviewService;
+import com.backend.Skytouch.jobalert.service.JobAlertService;
+import com.backend.Skytouch.offer.service.OfferService;
+import com.backend.Skytouch.savedjob.service.SavedJobService;
 import com.backend.Skytouch.common.apimodel.PageResponse;
 import com.backend.Skytouch.common.enums.UserRole;
 import com.backend.Skytouch.common.exception.BadRequestException;
@@ -41,6 +45,10 @@ public class JobSeekerService {
     private final AddressValidationService addressValidationService;
     private final JobSeekerProfileCompletenessCalculator profileCompletenessCalculator;
     private final ApplicationService applicationService;
+    private final SavedJobService savedJobService;
+    private final InterviewService interviewService;
+    private final OfferService offerService;
+    private final JobAlertService jobAlertService;
 
     @Transactional(readOnly = true)
     public PageResponse<JobSeekerResponse> findAll(int page, int size) {
@@ -77,8 +85,10 @@ public class JobSeekerService {
                 .profileCompleteness(profileCompletenessCalculator.calculate(user, profile))
                 .stats(JobSeekerDashboardStats.builder()
                         .applicationsCount(applicationService.countApplicationsForSeeker(email))
-                        .savedJobsCount(0)
-                        .interviewsCount(0)
+                        .savedJobsCount(savedJobService.countForSeeker(email))
+                        .interviewsCount(interviewService.countUpcomingForSeeker(email))
+                        .pendingOffersCount(offerService.countPendingForSeeker(email))
+                        .jobAlertsCount(jobAlertService.countActiveForSeeker(email))
                         .build())
                 .build();
     }

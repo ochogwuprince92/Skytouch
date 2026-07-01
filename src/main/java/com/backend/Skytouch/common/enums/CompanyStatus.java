@@ -2,5 +2,7 @@ package com.backend.Skytouch.common.enums;
 
 public enum CompanyStatus {
     PENDING,
-    ACTIVE
+    ACTIVE,
+    REJECTED,
+    SUSPENDED
 }

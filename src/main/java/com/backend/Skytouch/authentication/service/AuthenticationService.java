@@ -158,6 +158,16 @@ public class AuthenticationService {
                 .build();
     }
 
+    // ─── Logout ───────────────────────────────────────────────────────────────
+
+    @Transactional
+    public LogoutResponse logout(String accessToken) {
+        sessionService.revokeSession(accessToken);
+        return LogoutResponse.builder()
+                .message("Logged out successfully")
+                .build();
+    }
+
     // ─── Private helpers ──────────────────────────────────────────────────────
 
     private void assertAccountActive(Users user) {

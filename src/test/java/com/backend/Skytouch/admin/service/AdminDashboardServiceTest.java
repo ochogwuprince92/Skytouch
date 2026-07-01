@@ -1,7 +1,11 @@
 package com.backend.Skytouch.admin.service;
 
+import com.backend.Skytouch.application.repository.JobApplicationRepository;
+import com.backend.Skytouch.common.enums.ApplicationStatus;
+import com.backend.Skytouch.common.enums.JobStatus;
 import com.backend.Skytouch.common.enums.UserRole;
 import com.backend.Skytouch.common.enums.UserStatus;
+import com.backend.Skytouch.job.repository.JobRepository;
 import com.backend.Skytouch.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +22,15 @@ class AdminDashboardServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private AdminModerationService adminModerationService;
+
+    @Mock
+    private JobRepository jobRepository;
+
+    @Mock
+    private JobApplicationRepository applicationRepository;
+
     @InjectMocks
     private AdminDashboardService adminDashboardService;
 
@@ -29,6 +42,10 @@ class AdminDashboardServiceTest {
         when(userRepository.countByRole(UserRole.ADMIN)).thenReturn(1L);
         when(userRepository.countByEmailVerifiedFalse()).thenReturn(3L);
         when(userRepository.countByStatus(UserStatus.PENDING)).thenReturn(4L);
+        when(adminModerationService.countPendingCompanies()).thenReturn(2L);
+        when(jobRepository.countByStatus(JobStatus.ACTIVE)).thenReturn(5L);
+        when(applicationRepository.count()).thenReturn(20L);
+        when(applicationRepository.countByStatus(ApplicationStatus.HIRED)).thenReturn(3L);
 
         var result = adminDashboardService.getDashboard();
 
@@ -38,5 +55,9 @@ class AdminDashboardServiceTest {
         assertThat(result.getAdmins()).isEqualTo(1);
         assertThat(result.getPendingEmailVerifications()).isEqualTo(3);
         assertThat(result.getPendingAccounts()).isEqualTo(4);
+        assertThat(result.getPendingCompanies()).isEqualTo(2);
+        assertThat(result.getActiveJobs()).isEqualTo(5);
+        assertThat(result.getTotalApplications()).isEqualTo(20);
+        assertThat(result.getTotalHires()).isEqualTo(3);
     }
 }

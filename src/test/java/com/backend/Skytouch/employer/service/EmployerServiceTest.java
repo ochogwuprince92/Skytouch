@@ -15,6 +15,7 @@ import com.backend.Skytouch.employer.apimodel.EmployerResponse;
 import com.backend.Skytouch.employer.entity.Employer;
 import com.backend.Skytouch.employer.repository.EmployerRepository;
 import com.backend.Skytouch.job.repository.JobRepository;
+import com.backend.Skytouch.offer.service.OfferService;
 import com.backend.Skytouch.user.entity.Users;
 import com.backend.Skytouch.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,9 @@ class EmployerServiceTest {
 
     @Mock
     private ApplicationService applicationService;
+
+    @Mock
+    private OfferService offerService;
 
     @InjectMocks
     private EmployerService employerService;
@@ -163,6 +167,11 @@ class EmployerServiceTest {
                 .thenReturn(Optional.of(user));
         when(employerRepository.findByUser_Id(userId)).thenReturn(Optional.of(profile));
         when(profileCompletenessCalculator.calculate(user, profile, true)).thenReturn(completeness);
+        when(jobRepository.countByCompany_IdAndStatus(company.getId(), JobStatus.ACTIVE)).thenReturn(0L);
+        when(jobRepository.countByCompany_IdAndStatus(company.getId(), JobStatus.DRAFT)).thenReturn(0L);
+        when(applicationService.countApplicationsForCompany(company.getId())).thenReturn(0L);
+        when(offerService.countOpenOffersForCompany(company.getId())).thenReturn(0L);
+        when(offerService.countHiresForCompany(company.getId())).thenReturn(0L);
 
         var result = employerService.getDashboard("employer@example.com");
 
@@ -204,6 +213,8 @@ class EmployerServiceTest {
         when(jobRepository.countByCompany_IdAndStatus(companyId, JobStatus.ACTIVE)).thenReturn(2L);
         when(jobRepository.countByCompany_IdAndStatus(companyId, JobStatus.DRAFT)).thenReturn(1L);
         when(applicationService.countApplicationsForCompany(companyId)).thenReturn(5L);
+        when(offerService.countOpenOffersForCompany(companyId)).thenReturn(1L);
+        when(offerService.countHiresForCompany(companyId)).thenReturn(2L);
         when(profileCompletenessCalculator.calculate(user, profile, true)).thenReturn(completeness);
 
         var result = employerService.getDashboard("employer@example.com");
@@ -211,5 +222,7 @@ class EmployerServiceTest {
         assertThat(result.getStats().getActiveJobsCount()).isEqualTo(2);
         assertThat(result.getStats().getDraftJobsCount()).isEqualTo(1);
         assertThat(result.getStats().getTotalApplicantsCount()).isEqualTo(5);
+        assertThat(result.getStats().getOpenOffersCount()).isEqualTo(1);
+        assertThat(result.getStats().getHiresCount()).isEqualTo(2);
     }
 }

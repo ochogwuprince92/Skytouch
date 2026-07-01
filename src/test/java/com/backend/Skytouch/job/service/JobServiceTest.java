@@ -1,5 +1,6 @@
 package com.backend.Skytouch.job.service;
 
+import com.backend.Skytouch.common.enums.CompanyStatus;
 import com.backend.Skytouch.common.enums.EmploymentType;
 import com.backend.Skytouch.common.enums.JobStatus;
 import com.backend.Skytouch.common.enums.WorkMode;
@@ -12,6 +13,8 @@ import com.backend.Skytouch.job.apimodel.JobCreateRequest;
 import com.backend.Skytouch.job.apimodel.JobUpdateRequest;
 import com.backend.Skytouch.job.entity.Job;
 import com.backend.Skytouch.job.repository.JobRepository;
+import com.backend.Skytouch.jobalert.service.JobAlertService;
+import com.backend.Skytouch.savedjob.service.SavedJobService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -42,6 +45,12 @@ class JobServiceTest {
 
     @Mock
     private JobMapper jobMapper;
+
+    @Mock
+    private SavedJobService savedJobService;
+
+    @Mock
+    private JobAlertService jobAlertService;
 
     @InjectMocks
     private JobService jobService;
@@ -118,6 +127,7 @@ class JobServiceTest {
         assertThat(response.getStatus()).isEqualTo(JobStatus.ACTIVE);
         assertThat(job.getStatus()).isEqualTo(JobStatus.ACTIVE);
         assertThat(job.getPublishedAt()).isNotNull();
+        verify(jobAlertService).notifyMatchingSeekers(job);
     }
 
     @Test
@@ -190,6 +200,7 @@ class JobServiceTest {
                 eq(WorkMode.REMOTE),
                 eq("Lagos"),
                 eq("Technology"),
+                eq(CompanyStatus.ACTIVE),
                 any(Pageable.class))).thenReturn(page);
         when(jobMapper.toResponse(job)).thenReturn(
                 com.backend.Skytouch.job.apimodel.JobResponse.builder()
@@ -216,7 +227,7 @@ class JobServiceTest {
         when(companyService.getLinkedCompany("other@example.com"))
                 .thenReturn(Company.builder().id(UUID.randomUUID()).build());
 
-        assertThatThrownBy(() -> jobService.findById(jobId, "other@example.com", true))
+        assertThatThrownBy(() -> jobService.findById(jobId, "other@example.com", true, false))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }

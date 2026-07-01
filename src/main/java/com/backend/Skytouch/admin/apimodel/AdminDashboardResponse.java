@@ -13,4 +13,8 @@ public class AdminDashboardResponse {
     private final long admins;
     private final long pendingEmailVerifications;
     private final long pendingAccounts;
+    private final long pendingCompanies;
+    private final long activeJobs;
+    private final long totalApplications;
+    private final long totalHires;
 }
