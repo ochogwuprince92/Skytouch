@@ -2395,6 +2395,41 @@
       ]
     },
     {
+      "name": "04p - Offer Expiry",
+      "item": [
+        {
+          "name": "Expire Stale Offers (Admin)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{adminAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns expiry count', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.offersExpired).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/admin/offers/expire-stale"
+          }
+        }
+      ]
+    },
+    {
       "name": "04c - Admin Dashboard",
       "item": [
         {

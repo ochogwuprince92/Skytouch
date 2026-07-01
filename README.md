@@ -286,6 +286,72 @@ Shared code (exceptions, mappers, utilities, enums) lives under `common/`. The `
 
 ## Authentication
 
+Skytouch uses **email + password** registration, **email OTP verification**, and **JWT sessions** stored in `auth_sessions` (hashed, revocable).
+
+### Registration & login
+
+| Step | Endpoint | Notes |
+|------|----------|-------|
+| Register | `POST /api/auth/register` | `userType`: `JOB_SEEKER` or `EMPLOYER` |
+| Verify email | `POST /api/auth/verify-email/{email}` | 6-digit OTP from email |
+| Resend OTP | `POST /api/auth/verify-email/resend` | |
+| Login | `POST /api/auth/login` | Returns `accessToken` (Bearer JWT) |
+| Logout | `POST /api/auth/logout` | Revokes session server-side |
+| Forgot password | `POST /api/auth/forgot-password` | |
+| Reset password | `POST /api/auth/reset-password` | |
+
+Send `Authorization: Bearer <accessToken>` on protected routes.
+
+### First admin user (production)
+
+Set in `.env` before first startup (only when no `ADMIN` exists):
+
+```env
+ADMIN_BOOTSTRAP_ENABLED=true
+ADMIN_BOOTSTRAP_EMAIL=admin@yourcompany.com
+ADMIN_BOOTSTRAP_PASSWORD=YourSecurePassword123!
+```
+
+Disable `ADMIN_BOOTSTRAP_ENABLED` after the admin is created.
+
+## Production deployment
+
+### Fresh database
+
+1. Create PostgreSQL database `skytouch_db`
+2. Copy `.env.example` → `.env` and fill values
+3. Flyway runs **V0–V15** automatically on startup (`users`, `job_seekers`, `otp_codes` … through digest deliveries)
+4. Enable admin bootstrap (above) for first run
+5. `.\mvnw.cmd spring-boot:run` — app on port **8083**
+6. Swagger: `http://localhost:8083/swagger-ui.html`
+7. Run Postman collection folders **01 → 04o**
+
+### Schedulers (production)
+
+| Feature | Config | Default |
+|---------|--------|---------|
+| Job alert digest | `JOB_ALERT_DIGEST_*` | Daily 8:00 AM |
+| Offer expiry | `OFFER_EXPIRY_*` | Hourly |
+
+Manual triggers (admin): `POST /api/admin/job-alerts/digest/run`, `POST /api/admin/offers/expire-stale`
+
+### Migrations
+
+| Version | Purpose |
+|---------|---------|
+| V0 | `users`, `job_seekers`, `otp_codes` baseline |
+| V1–V2 | Job seeker schema fixes |
+| V3–V6 | Employers, companies, jobs, applications |
+| V7–V10 | Notifications, saved jobs, interviews, messages |
+| V11 | Job offers |
+| V12–V15 | Job alerts, audit, auth sessions, digest deliveries |
+
+### Existing databases
+
+If your DB already ran V1–V15 without V0, Flyway applies V0 on next startup using `CREATE TABLE IF NOT EXISTS` (no-op when tables exist).
+
+## Authentication (legacy docs below — prefer sections above)
+
 Skytouch uses **password + email OTP** for login and **database-backed session tokens** for API access. Spring Security is enabled with a stateless filter chain: each request is authenticated via a `Bearer` token that maps to a row in `auth_sessions`.
 
 There is no separate signup endpoint under `/api/auth`. Registration is role-specific today (job seekers only). Employer registration is not implemented yet.

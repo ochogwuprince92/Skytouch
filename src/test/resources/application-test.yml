@@ -41,5 +41,11 @@ app:
   job-alert:
     digest:
       enabled: false
+  admin:
+    bootstrap:
+      enabled: false
+  offer:
+    expiry:
+      enabled: false
   frontend:
     url: http://localhost:4173

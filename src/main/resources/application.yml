@@ -55,6 +55,15 @@ app:
       enabled: ${JOB_ALERT_DIGEST_ENABLED:true}
       cron: ${JOB_ALERT_DIGEST_CRON:0 0 8 * * *}
       lookback-hours: ${JOB_ALERT_DIGEST_LOOKBACK_HOURS:24}
+  admin:
+    bootstrap:
+      enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+      email: ${ADMIN_BOOTSTRAP_EMAIL:}
+      password: ${ADMIN_BOOTSTRAP_PASSWORD:}
+  offer:
+    expiry:
+      enabled: ${OFFER_EXPIRY_ENABLED:true}
+      cron: ${OFFER_EXPIRY_CRON:0 0 * * * *}
 
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}

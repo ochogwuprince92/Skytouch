@@ -201,6 +201,33 @@ public class NotificationService {
     }
 
     @Transactional
+    public void notifyOnOfferExpired(com.backend.Skytouch.offer.entity.JobOffer offer) {
+        JobApplication application = offer.getApplication();
+        Job job = application.getJob();
+        String jobTitle = job.getTitle();
+        Users seekerUser = application.getJobSeeker().getUser();
+
+        saveNotification(
+                seekerUser,
+                NotificationType.OFFER_DECLINED,
+                "Offer expired",
+                "Your offer for \"" + jobTitle + "\" has expired.",
+                application.getId());
+        emailService.sendOfferExpired(seekerUser.getEmail(), jobTitle);
+
+        employerRepository.findByCompany_Id(job.getCompany().getId()).ifPresent(employer -> {
+            Users employerUser = employer.getUser();
+            saveNotification(
+                    employerUser,
+                    NotificationType.OFFER_DECLINED,
+                    "Offer expired",
+                    "The offer for \"" + jobTitle + "\" to " + application.getSeekerName() + " has expired.",
+                    application.getId());
+            emailService.sendOfferExpired(employerUser.getEmail(), jobTitle);
+        });
+    }
+
+    @Transactional
     public void notifyOnJobAlertMatch(Users seeker, Job job) {
         String jobTitle = job.getTitle();
         String companyName = job.getCompany().getName();

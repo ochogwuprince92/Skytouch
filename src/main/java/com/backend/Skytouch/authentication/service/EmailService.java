@@ -102,6 +102,14 @@ public class EmailService {
                 seekerName + " declined your offer for \"" + jobTitle + "\".");
     }
 
+    public void sendOfferExpired(String toEmail, String jobTitle) {
+        sendPlainEmail(
+                toEmail,
+                "Offer expired: " + jobTitle,
+                "The offer for \"" + jobTitle + "\" has expired.\n\n"
+                        + "Log in to Skytouch for details.");
+    }
+
     public void sendHiredConfirmation(String toEmail, String jobTitle) {
         sendPlainEmail(
                 toEmail,
