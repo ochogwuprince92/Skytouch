@@ -63,4 +63,16 @@ public class AuthenticationController {
         log.info("Reset password attempt");
         return ResponseEntity.ok(authenticationService.resetPassword(request));
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<LogoutResponse> logout(
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.ok(LogoutResponse.builder()
+                    .message("Logged out successfully")
+                    .build());
+        }
+        log.info("Logout request");
+        return ResponseEntity.ok(authenticationService.logout(authorization.substring(7)));
+    }
 }

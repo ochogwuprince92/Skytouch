@@ -17,6 +17,7 @@ import com.backend.Skytouch.job.entity.Job;
 import com.backend.Skytouch.job.repository.JobRepository;
 import com.backend.Skytouch.jobseeker.entity.JobSeeker;
 import com.backend.Skytouch.jobseeker.repository.JobSeekerRepository;
+import com.backend.Skytouch.notification.service.NotificationService;
 import com.backend.Skytouch.user.entity.Users;
 import com.backend.Skytouch.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,9 @@ class ApplicationServiceTest {
     @Mock
     private ApplicationMapper applicationMapper;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private ApplicationService applicationService;
 
@@ -93,6 +97,7 @@ class ApplicationServiceTest {
 
         assertThat(response.getStatus()).isEqualTo(ApplicationStatus.SUBMITTED);
         verify(applicationRepository).save(entity);
+        verify(notificationService).notifyOnApplicationSubmitted(entity);
     }
 
     @Test
@@ -197,6 +202,7 @@ class ApplicationServiceTest {
         var response = applicationService.updateStatus("employer@example.com", jobId, applicationId, request);
 
         assertThat(response.getStatus()).isEqualTo(ApplicationStatus.REVIEWING);
+        verify(notificationService).notifyOnStatusUpdated(application);
     }
 
     @Test

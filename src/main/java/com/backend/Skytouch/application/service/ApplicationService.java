@@ -21,6 +21,7 @@ import com.backend.Skytouch.job.entity.Job;
 import com.backend.Skytouch.job.repository.JobRepository;
 import com.backend.Skytouch.jobseeker.entity.JobSeeker;
 import com.backend.Skytouch.jobseeker.repository.JobSeekerRepository;
+import com.backend.Skytouch.notification.service.NotificationService;
 import com.backend.Skytouch.user.entity.Users;
 import com.backend.Skytouch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +49,8 @@ public class ApplicationService {
     private static final Set<ApplicationStatus> WITHDRAWABLE_STATUSES = EnumSet.of(
             ApplicationStatus.SUBMITTED,
             ApplicationStatus.REVIEWING,
-            ApplicationStatus.SHORTLISTED
+            ApplicationStatus.SHORTLISTED,
+            ApplicationStatus.INTERVIEW_SCHEDULED
     );
 
     private final JobApplicationRepository applicationRepository;
@@ -57,6 +59,7 @@ public class ApplicationService {
     private final UserRepository userRepository;
     private final CompanyService companyService;
     private final ApplicationMapper applicationMapper;
+    private final NotificationService notificationService;
 
     @Transactional
     public ApplicationResponse apply(String seekerEmail, UUID jobId, ApplicationCreateRequest request) {
@@ -75,7 +78,9 @@ public class ApplicationService {
 
         JobApplication application = applicationMapper.toEntity(
                 job, jobSeeker, request != null ? request.getCoverLetter() : null);
-        return applicationMapper.toResponse(applicationRepository.save(application));
+        JobApplication saved = applicationRepository.save(application);
+        notificationService.notifyOnApplicationSubmitted(saved);
+        return applicationMapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -126,12 +131,19 @@ public class ApplicationService {
         if (application.getStatus() == ApplicationStatus.WITHDRAWN) {
             throw new BadRequestException("Withdrawn applications cannot be updated");
         }
+        if (application.getStatus() == ApplicationStatus.OFFER_EXTENDED
+                || application.getStatus() == ApplicationStatus.HIRED
+                || application.getStatus() == ApplicationStatus.OFFER_DECLINED) {
+            throw new BadRequestException("Application status cannot be changed at this stage");
+        }
         if (!EMPLOYER_STATUSES.contains(request.getStatus())) {
             throw new BadRequestException("Invalid status for employer update");
         }
 
         application.setStatus(request.getStatus());
-        return applicationMapper.toResponse(applicationRepository.save(application));
+        JobApplication saved = applicationRepository.save(application);
+        notificationService.notifyOnStatusUpdated(saved);
+        return applicationMapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)

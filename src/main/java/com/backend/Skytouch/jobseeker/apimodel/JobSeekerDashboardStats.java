@@ -10,4 +10,6 @@ public class JobSeekerDashboardStats {
     private final long applicationsCount;
     private final long savedJobsCount;
     private final long interviewsCount;
+    private final long pendingOffersCount;
+    private final long jobAlertsCount;
 }

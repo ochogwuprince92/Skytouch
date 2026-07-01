@@ -1,5 +1,10 @@
 package com.backend.Skytouch.jobseeker.service;
 
+import com.backend.Skytouch.application.service.ApplicationService;
+import com.backend.Skytouch.interview.service.InterviewService;
+import com.backend.Skytouch.jobalert.service.JobAlertService;
+import com.backend.Skytouch.offer.service.OfferService;
+import com.backend.Skytouch.savedjob.service.SavedJobService;
 import com.backend.Skytouch.common.address.AddressValidationService;
 import com.backend.Skytouch.common.address.ValidatedAddress;
 import com.backend.Skytouch.common.enums.UserRole;
@@ -51,6 +56,21 @@ class JobSeekerServiceTest {
 
     @Mock
     private JobSeekerProfileCompletenessCalculator profileCompletenessCalculator;
+
+    @Mock
+    private ApplicationService applicationService;
+
+    @Mock
+    private SavedJobService savedJobService;
+
+    @Mock
+    private InterviewService interviewService;
+
+    @Mock
+    private OfferService offerService;
+
+    @Mock
+    private JobAlertService jobAlertService;
 
     @InjectMocks
     private JobSeekerService jobSeekerService;
@@ -166,6 +186,11 @@ class JobSeekerServiceTest {
                 .thenReturn(Optional.of(user));
         when(jobSeekerRepository.findByUser_Id(userId)).thenReturn(Optional.of(profile));
         when(profileCompletenessCalculator.calculate(user, profile)).thenReturn(completeness);
+        when(applicationService.countApplicationsForSeeker("seeker@example.com")).thenReturn(0L);
+        when(savedJobService.countForSeeker("seeker@example.com")).thenReturn(2L);
+        when(interviewService.countUpcomingForSeeker("seeker@example.com")).thenReturn(1L);
+        when(offerService.countPendingForSeeker("seeker@example.com")).thenReturn(1L);
+        when(jobAlertService.countActiveForSeeker("seeker@example.com")).thenReturn(2L);
 
         var result = jobSeekerService.getDashboard("seeker@example.com");
 
@@ -174,5 +199,9 @@ class JobSeekerServiceTest {
         assertThat(result.getOpenToWork()).isTrue();
         assertThat(result.getProfileCompleteness().getPercentComplete()).isEqualTo(50);
         assertThat(result.getStats().getApplicationsCount()).isZero();
+        assertThat(result.getStats().getSavedJobsCount()).isEqualTo(2);
+        assertThat(result.getStats().getInterviewsCount()).isEqualTo(1);
+        assertThat(result.getStats().getPendingOffersCount()).isEqualTo(1);
+        assertThat(result.getStats().getJobAlertsCount()).isEqualTo(2);
     }
 }

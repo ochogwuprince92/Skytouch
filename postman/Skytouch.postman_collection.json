@@ -366,6 +366,66 @@
             },
             "url": "{{baseUrl}}/api/auth/login"
           }
+        },
+        {
+          "name": "Logout",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns logout message', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.message).to.eql('Logged out successfully');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout"
+          }
+        },
+        {
+          "name": "Re-Login Job Seeker (after logout)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.environment.set('accessToken', body.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
         }
       ]
     },
@@ -1241,6 +1301,1095 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/job-seekers/me/dashboard"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04g - Notifications",
+      "item": [
+        {
+          "name": "List My Notifications (Job Seeker)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns notifications', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.content).to.be.an('array').that.is.not.empty;",
+                  "    pm.environment.set('notificationId', body.content[0].id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/me?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "me"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Count (Job Seeker)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Unread count present', function () {",
+                  "    pm.expect(pm.response.json().unreadCount).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/notifications/me/unread-count"
+          }
+        },
+        {
+          "name": "Mark Notification Read (Job Seeker)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Notification marked read', function () {",
+                  "    pm.expect(pm.response.json().read).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/notifications/me/{{notificationId}}/read"
+          }
+        },
+        {
+          "name": "List Employer Notifications",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Employer has new application notification', function () {",
+                  "    const types = pm.response.json().content.map(n => n.type);",
+                  "    pm.expect(types).to.include('NEW_APPLICATION');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/me?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "me"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark All Notifications Read (Employer)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 204 or 200', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/notifications/me/read-all"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04h - Engagement & Moderation",
+      "item": [
+        {
+          "name": "Save Job",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/saved-jobs/jobs/{{jobId}}"
+          }
+        },
+        {
+          "name": "List Saved Jobs",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Has saved jobs', function () {",
+                  "    pm.expect(pm.response.json().content.length).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/saved-jobs/me?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "saved-jobs", "me"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Shortlist Application (Employer)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Shortlisted', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('SHORTLISTED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"SHORTLISTED\"\n}"
+            },
+            "url": "{{baseUrl}}/api/jobs/{{jobId}}/applications/{{applicationId}}"
+          }
+        },
+        {
+          "name": "Schedule Interview (Employer)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Interview scheduled', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql('SCHEDULED');",
+                  "    pm.environment.set('interviewId', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"2030-06-15T10:00:00\",\n  \"durationMinutes\": 60,\n  \"mode\": \"VIDEO\",\n  \"locationOrLink\": \"https://meet.example.com/room\",\n  \"notes\": \"Please join 5 minutes early.\"\n}"
+            },
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/interviews"
+          }
+        },
+        {
+          "name": "List My Upcoming Interviews (Seeker)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Has upcoming interview', function () {",
+                  "    pm.expect(pm.response.json().content.length).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/interviews/me?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "interviews", "me"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Application Message (Seeker)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Thank you for scheduling the interview. I look forward to speaking with you.\"\n}"
+            },
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/messages"
+          }
+        },
+        {
+          "name": "List Application Messages (Employer)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Has messages', function () {",
+                  "    pm.expect(pm.response.json().content.length).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/applications/{{applicationId}}/messages?page=0&size=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications", "{{applicationId}}", "messages"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "50" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Pending Companies (Admin)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{adminAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.json().content.length > 0) {",
+                  "    pm.environment.set('companyId', pm.response.json().content[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/companies/pending?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "companies", "pending"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve Company (Admin)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{adminAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Company active', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('ACTIVE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/admin/companies/{{companyId}}/approve"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04i - Offers & Hiring",
+      "item": [
+        {
+          "name": "Complete Interview (Employer)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Interview completed', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('COMPLETED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED\"\n}"
+            },
+            "url": "{{baseUrl}}/api/interviews/{{interviewId}}"
+          }
+        },
+        {
+          "name": "Extend Offer (Employer)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Offer pending', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.status).to.eql('PENDING');",
+                  "    pm.environment.set('offerId', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salaryAmount\": 450000,\n  \"salaryCurrency\": \"NGN\",\n  \"startDate\": \"2030-07-01\",\n  \"terms\": \"3-month probation, health cover included.\",\n  \"expiresAt\": \"2030-06-30T23:59:59\"\n}"
+            },
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/offers"
+          }
+        },
+        {
+          "name": "List My Pending Offers (Seeker)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Has pending offer', function () {",
+                  "    pm.expect(pm.response.json().content.length).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/offers/me?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "offers", "me"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Accept Offer (Seeker)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Offer accepted', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('ACCEPTED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/offers/{{offerId}}/accept"
+          }
+        },
+        {
+          "name": "Get Job Seeker Dashboard After Hire",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Dashboard loads', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/job-seekers/me/dashboard"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04j - Job Alerts",
+      "item": [
+        {
+          "name": "Create Job Alert",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Alert created', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.active).to.eql(true);",
+                  "    pm.environment.set('jobAlertId', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Remote engineering roles\",\n  \"keyword\": \"engineer\",\n  \"workMode\": \"REMOTE\"\n}"
+            },
+            "url": "{{baseUrl}}/api/job-alerts"
+          }
+        },
+        {
+          "name": "List My Job Alerts",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Has alerts', function () {",
+                  "    pm.expect(pm.response.json().content.length).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/job-alerts/me?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "job-alerts", "me"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Publish Job (Employer - triggers alerts)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Job published', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('ACTIVE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/jobs/{{jobId}}/publish"
+          }
+        },
+        {
+          "name": "Check Alert Notification (Seeker)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Job alert notification present', function () {",
+                  "    const types = pm.response.json().content.map(n => n.type);",
+                  "    pm.expect(types).to.include('JOB_ALERT_MATCH');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/me?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "me"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Job Alert",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Alert deactivated', function () {",
+                  "    pm.expect(pm.response.json().active).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            },
+            "url": "{{baseUrl}}/api/job-alerts/{{jobAlertId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04k - Analytics",
+      "item": [
+        {
+          "name": "Employer Funnel Analytics",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns funnel data', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.funnel).to.be.an('object');",
+                  "    pm.expect(body.funnel.total).to.be.a('number');",
+                  "    pm.expect(body.topJobsByApplicants).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/employers/me/analytics"
+          }
+        },
+        {
+          "name": "Admin Platform Analytics",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{adminAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns platform funnel', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.totalUsers).to.be.a('number');",
+                  "    pm.expect(body.applicationFunnel).to.be.an('object');",
+                  "    pm.expect(body.platformHireRatePercent).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/analytics"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04l - Audit Log",
+      "item": [
+        {
+          "name": "List Audit Events (Admin)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{adminAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns paginated audit events', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.content).to.be.an('array');",
+                  "    pm.expect(body.totalElements).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/audit-events?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "audit-events"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04m - Job Analytics",
+      "item": [
+        {
+          "name": "Job Funnel Analytics (Employer)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns per-job funnel', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.jobId).to.eql(pm.environment.get('jobId'));",
+                  "    pm.expect(body.jobTitle).to.be.a('string');",
+                  "    pm.expect(body.funnel).to.be.an('object');",
+                  "    pm.expect(body.funnel.total).to.be.a('number');",
+                  "    pm.expect(body.hireRatePercent).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/employers/me/analytics/jobs/{{jobId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04n - CSV Export",
+      "item": [
+        {
+          "name": "Export Job Applications (CSV)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns CSV content', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv');",
+                  "  const body = pm.response.text();",
+                  "    pm.expect(body).to.include('application_id,seeker_name');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/jobs/{{jobId}}/applications/export"
+          }
+        },
+        {
+          "name": "Export Company Applications (CSV)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns company CSV', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv');",
+                  "    pm.expect(pm.response.text()).to.include('job_title');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/employers/me/applications/export"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04o - Job Alert Digest",
+      "item": [
+        {
+          "name": "Run Job Alert Digest (Admin)",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{adminAccessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns digest run summary', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.seekersNotified).to.be.a('number');",
+                  "    pm.expect(body.jobsIncluded).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/admin/job-alerts/digest/run"
           }
         }
       ]

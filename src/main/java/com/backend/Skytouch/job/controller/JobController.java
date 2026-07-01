@@ -3,6 +3,7 @@ package com.backend.Skytouch.job.controller;
 import com.backend.Skytouch.application.apimodel.ApplicationCreateRequest;
 import com.backend.Skytouch.application.apimodel.ApplicationResponse;
 import com.backend.Skytouch.application.apimodel.ApplicationStatusUpdateRequest;
+import com.backend.Skytouch.application.service.ApplicationExportService;
 import com.backend.Skytouch.application.service.ApplicationService;
 import com.backend.Skytouch.authentication.security.SecurityUtils;
 import com.backend.Skytouch.common.apimodel.PageResponse;
@@ -15,7 +16,10 @@ import com.backend.Skytouch.job.apimodel.JobUpdateRequest;
 import com.backend.Skytouch.job.service.JobService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +32,7 @@ public class JobController {
 
     private final JobService jobService;
     private final ApplicationService applicationService;
+    private final ApplicationExportService applicationExportService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -60,7 +65,8 @@ public class JobController {
     public JobResponse getById(@PathVariable UUID id) {
         var user = SecurityUtils.getCurrentUser();
         boolean isEmployer = user.getRole() == UserRole.EMPLOYER;
-        return jobService.findById(id, user.getEmail(), isEmployer);
+        boolean isJobSeeker = user.getRole() == UserRole.JOB_SEEKER;
+        return jobService.findById(id, user.getEmail(), isEmployer, isJobSeeker);
     }
 
     @PatchMapping("/{id}")
@@ -98,6 +104,18 @@ public class JobController {
             @RequestParam(defaultValue = "20") int size) {
         return applicationService.findApplicationsForJob(
                 SecurityUtils.getCurrentUser().getEmail(), id, page, size);
+    }
+
+    @GetMapping("/{id}/applications/export")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<byte[]> exportJobApplications(@PathVariable UUID id) {
+        byte[] csv = applicationExportService.exportJobApplications(
+                SecurityUtils.getCurrentUser().getEmail(), id);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"job-applications-" + id + ".csv\"")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv);
     }
 
     @PatchMapping("/{id}/applications/{applicationId}")

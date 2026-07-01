@@ -1,8 +1,12 @@
 package com.backend.Skytouch.admin.service;
 
 import com.backend.Skytouch.admin.apimodel.AdminDashboardResponse;
+import com.backend.Skytouch.application.repository.JobApplicationRepository;
+import com.backend.Skytouch.common.enums.ApplicationStatus;
+import com.backend.Skytouch.common.enums.JobStatus;
 import com.backend.Skytouch.common.enums.UserRole;
 import com.backend.Skytouch.common.enums.UserStatus;
+import com.backend.Skytouch.job.repository.JobRepository;
 import com.backend.Skytouch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminDashboardService {
 
     private final UserRepository userRepository;
+    private final AdminModerationService adminModerationService;
+    private final JobRepository jobRepository;
+    private final JobApplicationRepository applicationRepository;
 
     @Transactional(readOnly = true)
     public AdminDashboardResponse getDashboard() {
@@ -23,6 +30,10 @@ public class AdminDashboardService {
                 .admins(userRepository.countByRole(UserRole.ADMIN))
                 .pendingEmailVerifications(userRepository.countByEmailVerifiedFalse())
                 .pendingAccounts(userRepository.countByStatus(UserStatus.PENDING))
+                .pendingCompanies(adminModerationService.countPendingCompanies())
+                .activeJobs(jobRepository.countByStatus(JobStatus.ACTIVE))
+                .totalApplications(applicationRepository.count())
+                .totalHires(applicationRepository.countByStatus(ApplicationStatus.HIRED))
                 .build();
     }
 }

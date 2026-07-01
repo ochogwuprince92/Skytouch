@@ -2,6 +2,7 @@ package com.backend.Skytouch.company.service;
 
 import com.backend.Skytouch.common.address.AddressValidationService;
 import com.backend.Skytouch.common.address.ValidatedAddress;
+import com.backend.Skytouch.common.enums.CompanyStatus;
 import com.backend.Skytouch.common.enums.UserRole;
 import com.backend.Skytouch.common.exception.BadRequestException;
 import com.backend.Skytouch.common.exception.ConflictException;
@@ -103,6 +104,14 @@ public class CompanyService {
             throw new BadRequestException("Create a company profile before posting jobs");
         }
         return company;
+    }
+
+    @Transactional(readOnly = true)
+    public void requireActiveCompany(String email) {
+        Company company = getLinkedCompany(email);
+        if (company.getStatus() != CompanyStatus.ACTIVE) {
+            throw new BadRequestException("Company must be approved by an admin before publishing jobs");
+        }
     }
 
     private Employer getEmployerProfile(String email) {

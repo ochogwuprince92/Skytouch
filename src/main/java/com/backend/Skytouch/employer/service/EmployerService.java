@@ -15,6 +15,7 @@ import com.backend.Skytouch.employer.apimodel.EmployerResponse;
 import com.backend.Skytouch.employer.entity.Employer;
 import com.backend.Skytouch.employer.repository.EmployerRepository;
 import com.backend.Skytouch.job.repository.JobRepository;
+import com.backend.Skytouch.offer.service.OfferService;
 import com.backend.Skytouch.user.entity.Users;
 import com.backend.Skytouch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class EmployerService {
     private final EmployerProfileCompletenessCalculator profileCompletenessCalculator;
     private final JobRepository jobRepository;
     private final ApplicationService applicationService;
+    private final OfferService offerService;
 
     @Transactional(readOnly = true)
     public PageResponse<EmployerResponse> findAll(int page, int size) {
@@ -70,11 +72,15 @@ public class EmployerService {
         long activeJobsCount = 0;
         long draftJobsCount = 0;
         long totalApplicantsCount = 0;
+        long openOffersCount = 0;
+        long hiresCount = 0;
         if (companyLinked) {
             UUID companyId = profile.getCompany().getId();
             activeJobsCount = jobRepository.countByCompany_IdAndStatus(companyId, JobStatus.ACTIVE);
             draftJobsCount = jobRepository.countByCompany_IdAndStatus(companyId, JobStatus.DRAFT);
             totalApplicantsCount = applicationService.countApplicationsForCompany(companyId);
+            openOffersCount = offerService.countOpenOffersForCompany(companyId);
+            hiresCount = offerService.countHiresForCompany(companyId);
         }
 
         return EmployerDashboardResponse.builder()
@@ -87,6 +93,8 @@ public class EmployerService {
                         .activeJobsCount(activeJobsCount)
                         .totalApplicantsCount(totalApplicantsCount)
                         .draftJobsCount(draftJobsCount)
+                        .openOffersCount(openOffersCount)
+                        .hiresCount(hiresCount)
                         .build())
                 .build();
     }

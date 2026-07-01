@@ -50,6 +50,11 @@ app:
   storage:
     cloudinary-enabled: ${CLOUDINARY_ENABLED:true}
     local-upload-dir: ${LOCAL_UPLOAD_DIR:uploads}
+  job-alert:
+    digest:
+      enabled: ${JOB_ALERT_DIGEST_ENABLED:true}
+      cron: ${JOB_ALERT_DIGEST_CRON:0 0 8 * * *}
+      lookback-hours: ${JOB_ALERT_DIGEST_LOOKBACK_HOURS:24}
 
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}

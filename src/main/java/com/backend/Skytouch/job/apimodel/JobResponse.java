@@ -31,4 +31,5 @@ public class JobResponse {
     private final LocalDateTime closedAt;
     private final LocalDateTime createdAt;
     private final LocalDateTime updatedAt;
+    private final Boolean saved;
 }
