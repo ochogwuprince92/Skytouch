@@ -6,10 +6,16 @@ import com.backend.Skytouch.common.mapper.EmployerMapper;
 import com.backend.Skytouch.common.profile.EmployerProfileCompletenessCalculator;
 import com.backend.Skytouch.common.profile.ProfileCompleteness;
 import com.backend.Skytouch.common.profile.ProfileStep;
+import com.backend.Skytouch.company.entity.Company;
+import com.backend.Skytouch.application.service.ApplicationService;
+import com.backend.Skytouch.common.enums.CompanyStatus;
+import com.backend.Skytouch.common.enums.JobStatus;
 import com.backend.Skytouch.employer.apimodel.EmployerProfileRequest;
 import com.backend.Skytouch.employer.apimodel.EmployerResponse;
 import com.backend.Skytouch.employer.entity.Employer;
 import com.backend.Skytouch.employer.repository.EmployerRepository;
+import com.backend.Skytouch.job.repository.JobRepository;
+import com.backend.Skytouch.offer.service.OfferService;
 import com.backend.Skytouch.user.entity.Users;
 import com.backend.Skytouch.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -40,6 +46,15 @@ class EmployerServiceTest {
 
     @Mock
     private EmployerProfileCompletenessCalculator profileCompletenessCalculator;
+
+    @Mock
+    private JobRepository jobRepository;
+
+    @Mock
+    private ApplicationService applicationService;
+
+    @Mock
+    private OfferService offerService;
 
     @InjectMocks
     private EmployerService employerService;
@@ -119,5 +134,95 @@ class EmployerServiceTest {
         assertThat(result.getCompanyName()).isEqualTo("Acme Ltd");
         assertThat(result.isCompanyLinked()).isFalse();
         assertThat(result.getStats().getActiveJobsCount()).isZero();
+    }
+
+    @Test
+    void getDashboard_returnsCompanyLinkedTrueWhenCompanyExists() {
+        UUID userId = UUID.randomUUID();
+        Users user = Users.builder()
+                .id(userId)
+                .email("employer@example.com")
+                .role(UserRole.EMPLOYER)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .build();
+        Company company = Company.builder()
+                .id(UUID.randomUUID())
+                .name("Acme Ltd")
+                .status(CompanyStatus.ACTIVE)
+                .build();
+        Employer profile = Employer.builder()
+                .user(user)
+                .status(UserStatus.ACTIVE)
+                .company(company)
+                .companyName("Old Name")
+                .phone("+2348012345678")
+                .build();
+        ProfileCompleteness completeness = ProfileCompleteness.builder()
+                .percentComplete(100)
+                .steps(List.of())
+                .build();
+
+        when(userRepository.findByEmailAndRole("employer@example.com", UserRole.EMPLOYER))
+                .thenReturn(Optional.of(user));
+        when(employerRepository.findByUser_Id(userId)).thenReturn(Optional.of(profile));
+        when(profileCompletenessCalculator.calculate(user, profile, true)).thenReturn(completeness);
+        when(jobRepository.countByCompany_IdAndStatus(company.getId(), JobStatus.ACTIVE)).thenReturn(0L);
+        when(jobRepository.countByCompany_IdAndStatus(company.getId(), JobStatus.DRAFT)).thenReturn(0L);
+        when(applicationService.countApplicationsForCompany(company.getId())).thenReturn(0L);
+        when(offerService.countOpenOffersForCompany(company.getId())).thenReturn(0L);
+        when(offerService.countHiresForCompany(company.getId())).thenReturn(0L);
+
+        var result = employerService.getDashboard("employer@example.com");
+
+        assertThat(result.isCompanyLinked()).isTrue();
+        assertThat(result.getCompanyName()).isEqualTo("Acme Ltd");
+        verify(profileCompletenessCalculator).calculate(user, profile, true);
+    }
+
+    @Test
+    void getDashboard_returnsJobCountsWhenCompanyLinked() {
+        UUID userId = UUID.randomUUID();
+        UUID companyId = UUID.randomUUID();
+        Users user = Users.builder()
+                .id(userId)
+                .email("employer@example.com")
+                .role(UserRole.EMPLOYER)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .build();
+        Company company = Company.builder()
+                .id(companyId)
+                .name("Acme Ltd")
+                .status(CompanyStatus.ACTIVE)
+                .build();
+        Employer profile = Employer.builder()
+                .user(user)
+                .status(UserStatus.ACTIVE)
+                .company(company)
+                .phone("+2348012345678")
+                .build();
+        ProfileCompleteness completeness = ProfileCompleteness.builder()
+                .percentComplete(100)
+                .steps(List.of())
+                .build();
+
+        when(userRepository.findByEmailAndRole("employer@example.com", UserRole.EMPLOYER))
+                .thenReturn(Optional.of(user));
+        when(employerRepository.findByUser_Id(userId)).thenReturn(Optional.of(profile));
+        when(jobRepository.countByCompany_IdAndStatus(companyId, JobStatus.ACTIVE)).thenReturn(2L);
+        when(jobRepository.countByCompany_IdAndStatus(companyId, JobStatus.DRAFT)).thenReturn(1L);
+        when(applicationService.countApplicationsForCompany(companyId)).thenReturn(5L);
+        when(offerService.countOpenOffersForCompany(companyId)).thenReturn(1L);
+        when(offerService.countHiresForCompany(companyId)).thenReturn(2L);
+        when(profileCompletenessCalculator.calculate(user, profile, true)).thenReturn(completeness);
+
+        var result = employerService.getDashboard("employer@example.com");
+
+        assertThat(result.getStats().getActiveJobsCount()).isEqualTo(2);
+        assertThat(result.getStats().getDraftJobsCount()).isEqualTo(1);
+        assertThat(result.getStats().getTotalApplicantsCount()).isEqualTo(5);
+        assertThat(result.getStats().getOpenOffersCount()).isEqualTo(1);
+        assertThat(result.getStats().getHiresCount()).isEqualTo(2);
     }
 }

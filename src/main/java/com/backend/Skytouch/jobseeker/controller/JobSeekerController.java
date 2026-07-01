@@ -1,6 +1,7 @@
 package com.backend.Skytouch.jobseeker.controller;
 
 import com.backend.Skytouch.authentication.security.SecurityUtils;
+import com.backend.Skytouch.common.apimodel.PageResponse;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerDashboardResponse;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerKycRequest;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerOnboardingRequest;
@@ -11,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -44,8 +44,10 @@ public class JobSeekerController {
     }
 
     @GetMapping
-    public List<JobSeekerResponse> list() {
-        return jobSeekerService.findAll();
+    public PageResponse<JobSeekerResponse> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return jobSeekerService.findAll(page, size);
     }
 
     @GetMapping("/{id}")

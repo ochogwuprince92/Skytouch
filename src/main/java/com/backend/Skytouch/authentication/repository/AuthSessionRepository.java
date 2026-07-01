@@ -9,6 +9,8 @@ import java.util.UUID;
 
 public interface AuthSessionRepository extends JpaRepository<AuthSession, UUID> {
 
+    Optional<AuthSession> findByTokenHash(String tokenHash);
+
     Optional<AuthSession> findByTokenHashAndRevokedAtIsNullAndExpiresAtAfter(
             String tokenHash, LocalDateTime now);
 }

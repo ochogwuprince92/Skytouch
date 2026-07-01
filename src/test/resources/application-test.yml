@@ -1,14 +1,15 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/SkyTouch_db
+    url: jdbc:postgresql://localhost:5432/skytouch_db
     username: postgres
-    password: ogwaa123
+    password: newpassword
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   flyway:
     enabled: false
@@ -37,5 +38,8 @@ app:
       max-attempts: 5
     session:
       expiration-ms: 86400000
+  job-alert:
+    digest:
+      enabled: false
   frontend:
     url: http://localhost:4173

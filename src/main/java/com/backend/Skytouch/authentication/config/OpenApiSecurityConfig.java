@@ -23,7 +23,7 @@ public class OpenApiSecurityConfig {
             components.addSecuritySchemes(BEARER_SCHEME, new SecurityScheme()
                     .type(SecurityScheme.Type.HTTP)
                     .scheme("bearer")
-                    .description("JWT access token from POST /api/auth/otp/verify"));
+                    .description("Bearer token from POST /api/auth/login (accessToken field)"));
             openApi.addSecurityItem(new SecurityRequirement().addList(BEARER_SCHEME));
         };
     }
