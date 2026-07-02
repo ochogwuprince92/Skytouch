@@ -69,4 +69,9 @@ public class SessionService {
                     authSessionRepository.save(session);
                 });
     }
+
+    @Transactional
+    public void revokeAllSessions(UUID userId) {
+        authSessionRepository.revokeAllByUserId(userId, LocalDateTime.now());
+    }
 }

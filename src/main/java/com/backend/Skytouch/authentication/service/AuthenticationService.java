@@ -168,6 +168,48 @@ public class AuthenticationService {
                 .build();
     }
 
+    @Transactional
+    public MessageResponse changePassword(String email, ChangePasswordRequest request) {
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("Passwords do not match");
+        }
+
+        Users user = authenticationRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+        assertAccountActive(user);
+
+        if (!passwordVerifier.matches(request.getCurrentPassword(), user.getPassword(), passwordEncoder)) {
+            throw new UnauthorizedException("Current password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        authenticationRepository.save(user);
+        sessionService.revokeAllSessions(user.getId());
+
+        return MessageResponse.builder()
+                .message("Password updated successfully")
+                .build();
+    }
+
+    @Transactional
+    public MessageResponse deactivateAccount(String email, DeactivateAccountRequest request) {
+        Users user = authenticationRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+
+        if (!passwordVerifier.matches(request.getPassword(), user.getPassword(), passwordEncoder)) {
+            throw new UnauthorizedException("Invalid password");
+        }
+
+        user.setActive(false);
+        user.setStatus(UserStatus.SUSPENDED);
+        authenticationRepository.save(user);
+        sessionService.revokeAllSessions(user.getId());
+
+        return MessageResponse.builder()
+                .message("Account deactivated successfully")
+                .build();
+    }
+
     // ─── Private helpers ──────────────────────────────────────────────────────
 
     private void assertAccountActive(Users user) {

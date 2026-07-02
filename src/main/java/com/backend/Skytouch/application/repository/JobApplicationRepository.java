@@ -86,4 +86,25 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
             ORDER BY a.appliedAt DESC
             """)
     List<JobApplication> findAllByCompanyIdForExport(@Param("companyId") UUID companyId, Pageable pageable);
+
+    @Query("""
+            SELECT a FROM JobApplication a
+            JOIN FETCH a.job j
+            JOIN FETCH j.company
+            JOIN FETCH a.jobSeeker s
+            JOIN FETCH s.user
+            WHERE s.user.email = :email
+            ORDER BY a.appliedAt DESC
+            """)
+    List<JobApplication> findAllBySeekerEmailForExport(@Param("email") String email, Pageable pageable);
+
+    @Query("""
+            SELECT a FROM JobApplication a
+            JOIN FETCH a.job j
+            JOIN FETCH j.company
+            JOIN FETCH a.jobSeeker s
+            JOIN FETCH s.user
+            ORDER BY a.appliedAt DESC
+            """)
+    List<JobApplication> findAllForPlatformExport(Pageable pageable);
 }

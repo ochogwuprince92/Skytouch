@@ -58,4 +58,11 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
             @Param("companyStatus") CompanyStatus companyStatus,
             @Param("since") LocalDateTime since,
             Pageable pageable);
+
+    @Query("""
+            SELECT j FROM Job j
+            JOIN FETCH j.company
+            ORDER BY j.createdAt DESC
+            """)
+    List<Job> findAllForExport(Pageable pageable);
 }

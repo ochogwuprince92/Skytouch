@@ -284,6 +284,14 @@ Each domain follows the same vertical slice:
 
 Shared code (exceptions, mappers, utilities, enums) lives under `common/`. The `user` domain holds the core `Users` entity used across roles.
 
+## Frontend
+
+The backend is ready for a multi-role SPA (job seeker, employer, admin). Phased delivery plan:
+
+- **[docs/frontend-phases.md](docs/frontend-phases.md)** — phases 0–8 with screens, API mapping, gates, and sprint order
+
+API contract: [Swagger UI](http://localhost:8083/swagger-ui.html) when the app is running.
+
 ## Authentication
 
 Skytouch uses **email + password** registration, **email OTP verification**, and **JWT sessions** stored in `auth_sessions` (hashed, revocable).
@@ -314,6 +322,32 @@ ADMIN_BOOTSTRAP_PASSWORD=YourSecurePassword123!
 
 Disable `ADMIN_BOOTSTRAP_ENABLED` after the admin is created.
 
+### Admin API (`ADMIN` role)
+
+Login with `POST /api/auth/login` using bootstrap credentials. All routes require `Authorization: Bearer <token>`.
+
+| Area | Method | Path |
+|------|--------|------|
+| Dashboard | `GET` | `/api/admin/dashboard` |
+| Platform analytics | `GET` | `/api/admin/analytics` |
+| Audit log | `GET` | `/api/admin/audit-events` |
+| Pending companies | `GET` | `/api/admin/companies/pending` |
+| Approve company | `PATCH` | `/api/admin/companies/{id}/approve` |
+| Reject company | `PATCH` | `/api/admin/companies/{id}/reject` |
+| Suspend user | `PATCH` | `/api/admin/users/{id}/suspend` |
+| Force-close job | `PATCH` | `/api/admin/jobs/{id}/close` |
+| CSV export | `GET` | `/api/admin/export/{users\|jobs\|applications\|companies}` |
+| Run job alert digest | `POST` | `/api/admin/job-alerts/digest/run` |
+| Expire stale offers | `POST` | `/api/admin/offers/expire-stale` |
+
+### Account security (authenticated users)
+
+| Action | Method | Path |
+|--------|--------|------|
+| Change password | `PATCH` | `/api/auth/me/password` |
+| Deactivate account | `POST` | `/api/auth/me/deactivate` |
+| Export my applications | `GET` | `/api/applications/me/export` |
+
 ## Production deployment
 
 ### Fresh database
@@ -324,7 +358,7 @@ Disable `ADMIN_BOOTSTRAP_ENABLED` after the admin is created.
 4. Enable admin bootstrap (above) for first run
 5. `.\mvnw.cmd spring-boot:run` — app on port **8083**
 6. Swagger: `http://localhost:8083/swagger-ui.html`
-7. Run Postman collection folders **01 → 04o**
+7. Run Postman collection folders **01 → 04r** (set OTP env vars; admin credentials match `ADMIN_BOOTSTRAP_*`)
 
 ### Schedulers (production)
 

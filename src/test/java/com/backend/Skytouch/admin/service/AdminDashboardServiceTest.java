@@ -1,6 +1,7 @@
 package com.backend.Skytouch.admin.service;
 
 import com.backend.Skytouch.application.repository.JobApplicationRepository;
+import com.backend.Skytouch.audit.repository.AuditEventRepository;
 import com.backend.Skytouch.common.enums.ApplicationStatus;
 import com.backend.Skytouch.common.enums.JobStatus;
 import com.backend.Skytouch.common.enums.UserRole;
@@ -31,6 +32,9 @@ class AdminDashboardServiceTest {
     @Mock
     private JobApplicationRepository applicationRepository;
 
+    @Mock
+    private AuditEventRepository auditEventRepository;
+
     @InjectMocks
     private AdminDashboardService adminDashboardService;
 
@@ -46,6 +50,7 @@ class AdminDashboardServiceTest {
         when(jobRepository.countByStatus(JobStatus.ACTIVE)).thenReturn(5L);
         when(applicationRepository.count()).thenReturn(20L);
         when(applicationRepository.countByStatus(ApplicationStatus.HIRED)).thenReturn(3L);
+        when(auditEventRepository.count()).thenReturn(8L);
 
         var result = adminDashboardService.getDashboard();
 
@@ -59,5 +64,6 @@ class AdminDashboardServiceTest {
         assertThat(result.getActiveJobs()).isEqualTo(5);
         assertThat(result.getTotalApplications()).isEqualTo(20);
         assertThat(result.getTotalHires()).isEqualTo(3);
+        assertThat(result.getTotalAuditEvents()).isEqualTo(8);
     }
 }

@@ -30,6 +30,8 @@ public class ApplicationExportService {
             "application_id,seeker_name,seeker_email,status,cv_url,applied_at,updated_at\n";
     private static final String COMPANY_HEADER =
             "application_id,job_title,seeker_name,seeker_email,status,cv_url,applied_at,updated_at\n";
+    private static final String SEEKER_HEADER =
+            "application_id,job_title,company_name,status,applied_at,updated_at\n";
 
     private final JobApplicationRepository applicationRepository;
     private final JobRepository jobRepository;
@@ -49,6 +51,31 @@ public class ApplicationExportService {
         List<JobApplication> applications = applicationRepository.findAllByCompanyIdForExport(
                 company.getId(), PageRequest.of(0, MAX_EXPORT_ROWS));
         return toCsv(COMPANY_HEADER, applications, true);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportMyApplications(String seekerEmail) {
+        List<JobApplication> applications = applicationRepository.findAllBySeekerEmailForExport(
+                seekerEmail, PageRequest.of(0, MAX_EXPORT_ROWS));
+        StringBuilder csv = new StringBuilder(SEEKER_HEADER);
+        for (JobApplication application : applications) {
+            csv.append(toSeekerRow(application));
+        }
+        return csv.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private String toSeekerRow(JobApplication application) {
+        String appliedAt = application.getAppliedAt() != null
+                ? application.getAppliedAt().format(DATE_FORMAT) : "";
+        String updatedAt = application.getUpdatedAt() != null
+                ? application.getUpdatedAt().format(DATE_FORMAT) : "";
+        return CsvUtils.row(
+                application.getId().toString(),
+                application.getJob().getTitle(),
+                application.getJob().getCompany().getName(),
+                application.getStatus().name(),
+                appliedAt,
+                updatedAt);
     }
 
     private byte[] toCsv(String header, List<JobApplication> applications, boolean includeJobTitle) {

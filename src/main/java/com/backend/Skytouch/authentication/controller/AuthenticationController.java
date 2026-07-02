@@ -3,6 +3,7 @@ package com.backend.Skytouch.authentication.controller;
 import com.backend.Skytouch.authentication.apimodel.*;
 import com.backend.Skytouch.authentication.service.AuthenticationService;
 import com.backend.Skytouch.authentication.service.EmailVerificationService;
+import com.backend.Skytouch.authentication.security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,5 +75,21 @@ public class AuthenticationController {
         }
         log.info("Logout request");
         return ResponseEntity.ok(authenticationService.logout(authorization.substring(7)));
+    }
+
+    @PatchMapping("/me/password")
+    public ResponseEntity<MessageResponse> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request) {
+        log.info("Change password for email: {}", SecurityUtils.getCurrentUser().getEmail());
+        return ResponseEntity.ok(authenticationService.changePassword(
+                SecurityUtils.getCurrentUser().getEmail(), request));
+    }
+
+    @PostMapping("/me/deactivate")
+    public ResponseEntity<MessageResponse> deactivateAccount(
+            @Valid @RequestBody DeactivateAccountRequest request) {
+        log.info("Deactivate account for email: {}", SecurityUtils.getCurrentUser().getEmail());
+        return ResponseEntity.ok(authenticationService.deactivateAccount(
+                SecurityUtils.getCurrentUser().getEmail(), request));
     }
 }

@@ -17,4 +17,5 @@ public class AdminDashboardResponse {
     private final long activeJobs;
     private final long totalApplications;
     private final long totalHires;
+    private final long totalAuditEvents;
 }

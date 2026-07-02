@@ -137,4 +137,30 @@ class ApplicationExportServiceTest {
         assertThat(csv).contains("John Doe");
         assertThat(csv).contains("REVIEWING");
     }
+
+    @Test
+    void exportMyApplications_returnsSeekerCsv() {
+        Company company = Company.builder().id(UUID.randomUUID()).name("Acme").build();
+        Job job = Job.builder().id(UUID.randomUUID()).title("Data Analyst").company(company).build();
+        Users user = Users.builder().email("seeker@example.com").role(UserRole.JOB_SEEKER).build();
+        JobSeeker seeker = JobSeeker.builder().user(user).build();
+        JobApplication application = JobApplication.builder()
+                .id(UUID.randomUUID())
+                .job(job)
+                .jobSeeker(seeker)
+                .status(ApplicationStatus.SUBMITTED)
+                .appliedAt(LocalDateTime.of(2026, 6, 2, 9, 30))
+                .build();
+
+        when(applicationRepository.findAllBySeekerEmailForExport(eq("seeker@example.com"), any(Pageable.class)))
+                .thenReturn(List.of(application));
+
+        String csv = new String(
+                applicationExportService.exportMyApplications("seeker@example.com"),
+                StandardCharsets.UTF_8);
+
+        assertThat(csv).startsWith("application_id,job_title,company_name");
+        assertThat(csv).contains("Data Analyst");
+        assertThat(csv).contains("Acme");
+    }
 }

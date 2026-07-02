@@ -1,6 +1,8 @@
 package com.backend.Skytouch.authentication.service;
 
 import com.backend.Skytouch.authentication.apimodel.AuthResponse;
+import com.backend.Skytouch.authentication.apimodel.ChangePasswordRequest;
+import com.backend.Skytouch.authentication.apimodel.DeactivateAccountRequest;
 import com.backend.Skytouch.authentication.apimodel.LoginRequest;
 import com.backend.Skytouch.authentication.apimodel.OtpSentResponse;
 import com.backend.Skytouch.authentication.apimodel.RegisterRequest;
@@ -189,5 +191,43 @@ class AuthenticationServiceTest {
         assertThatThrownBy(() -> authenticationService.login(request))
                 .isInstanceOf(UnauthorizedException.class)
                 .hasMessageContaining("suspended");
+    }
+
+    @Test
+    void changePassword_updatesPasswordAndRevokesSessions() {
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        request.setCurrentPassword("OldPass123!");
+        request.setNewPassword("NewPass123!");
+        request.setConfirmPassword("NewPass123!");
+
+        when(authenticationRepository.findByEmail("test@example.com"))
+                .thenReturn(Optional.of(activeVerifiedUser));
+        when(passwordVerifier.matches("OldPass123!", activeVerifiedUser.getPassword(), passwordEncoder))
+                .thenReturn(true);
+        when(passwordEncoder.encode("NewPass123!")).thenReturn("new-hash");
+
+        var response = authenticationService.changePassword("test@example.com", request);
+
+        assertThat(response.getMessage()).contains("Password updated");
+        verify(authenticationRepository).save(activeVerifiedUser);
+        verify(sessionService).revokeAllSessions(activeVerifiedUser.getId());
+    }
+
+    @Test
+    void deactivateAccount_suspendsUserAndRevokesSessions() {
+        DeactivateAccountRequest request = new DeactivateAccountRequest();
+        request.setPassword("Password123!");
+
+        when(authenticationRepository.findByEmail("test@example.com"))
+                .thenReturn(Optional.of(activeVerifiedUser));
+        when(passwordVerifier.matches("Password123!", activeVerifiedUser.getPassword(), passwordEncoder))
+                .thenReturn(true);
+
+        var response = authenticationService.deactivateAccount("test@example.com", request);
+
+        assertThat(response.getMessage()).contains("deactivated");
+        assertThat(activeVerifiedUser.getActive()).isFalse();
+        assertThat(activeVerifiedUser.getStatus()).isEqualTo(UserStatus.SUSPENDED);
+        verify(sessionService).revokeAllSessions(activeVerifiedUser.getId());
     }
 }
