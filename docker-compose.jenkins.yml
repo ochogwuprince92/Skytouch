@@ -19,7 +19,7 @@ services:
     container_name: skytouch-jenkins
     privileged: true
     ports:
-      - "8080:8080"
+      - "8083:8080"
       - "50000:50000"
     env_file:
       - .env.jenkins
