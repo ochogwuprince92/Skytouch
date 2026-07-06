@@ -1,1 +1,0 @@
-ALTER TABLE job_seekers ALTER COLUMN cv_url DROP NOT NULL;

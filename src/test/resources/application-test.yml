@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/skytouch_db
+    url: jdbc:postgresql://localhost:5432/SkyTouch_db
     username: postgres
-    password: newpassword
+    password: ogwaa123
     driver-class-name: org.postgresql.Driver
 
   jpa:

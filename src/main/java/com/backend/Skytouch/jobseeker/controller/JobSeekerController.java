@@ -54,4 +54,5 @@ public class JobSeekerController {
     public JobSeekerResponse getById(@PathVariable UUID id) {
         return jobSeekerService.findById(id);
     }
+
 }
