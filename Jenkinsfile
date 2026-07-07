@@ -31,6 +31,28 @@ pipeline {
             }
         }
 
+        stage('Debug') {
+            steps {
+                sh '''
+                echo "========== ENVIRONMENT =========="
+                echo "SPRING_PROFILES_ACTIVE=$SPRING_PROFILES_ACTIVE"
+                echo "POSTGRES_DB=$POSTGRES_DB"
+                echo "POSTGRES_USER=$POSTGRES_USER"
+                echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD"
+                echo "DATASOURCE_URL=$DATASOURCE_URL"
+                echo "DATASOURCE_USERNAME=$DATASOURCE_USERNAME"
+
+                echo ""
+                echo "All POSTGRES variables:"
+                env | grep POSTGRES
+
+                echo ""
+                echo "All DATASOURCE variables:"
+                env | grep DATASOURCE
+            '''
+            }
+        }
+
         stage('Test') {
             steps {
                 sh 'chmod +x mvnw && ./mvnw clean test -B'
