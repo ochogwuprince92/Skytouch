@@ -17,6 +17,8 @@ target/
 .sts4-cache
 *.application.yml
 *.application-local.yml
+##uploads
+uploads/jobseekers/cv/
 
 ### IntelliJ IDEA ###
 .idea
