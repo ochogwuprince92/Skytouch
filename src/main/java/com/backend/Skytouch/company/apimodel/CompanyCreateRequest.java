@@ -1,5 +1,6 @@
 package com.backend.Skytouch.company.apimodel;
 
+import com.backend.Skytouch.common.enums.Industry;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -17,8 +18,7 @@ public class CompanyCreateRequest {
 
     private String description;
 
-    @Size(max = 255, message = "Industry must not exceed 255 characters")
-    private String industry;
+    private Industry industry;
 
     @Size(max = 500, message = "Website must not exceed 500 characters")
     private String website;

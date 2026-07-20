@@ -67,7 +67,10 @@ public class EmployerService {
     public EmployerDashboardResponse getDashboard(String email) {
         Users user = userRepository.findByEmailAndRole(email, EMPLOYER_ROLE)
                 .orElseThrow(() -> new ResourceNotFoundException("Employer not found: " + email));
-        Employer profile = employerRepository.findByUser_Id(user.getId()).orElse(null);
+        // Eager-fetch the linked company here too — companyLinked below
+        // depends on profile.getCompany() being real data, not a lazy
+        // proxy that hasn't been initialized.
+        Employer profile = employerRepository.findByUser_IdWithCompany(user.getId()).orElse(null);
         boolean companyLinked = profile != null && profile.getCompany() != null;
         long activeJobsCount = 0;
         long draftJobsCount = 0;
@@ -115,7 +118,12 @@ public class EmployerService {
     }
 
     private EmployerResponse toResponseWithProfile(Users user) {
-        Employer profile = employerRepository.findByUser_Id(user.getId()).orElse(null);
+        // Eager-fetch the linked company here — this is what feeds
+        // EmployerMapper.toResponse(), which reads profile.getCompany()
+        // directly. Without the fetch-join, that call can see an
+        // uninitialized lazy proxy instead of the real linked Company,
+        // even though the database itself has the link saved correctly.
+        Employer profile = employerRepository.findByUser_IdWithCompany(user.getId()).orElse(null);
         return employerMapper.toResponse(user, profile);
     }
 

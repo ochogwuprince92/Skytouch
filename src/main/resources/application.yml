@@ -37,9 +37,12 @@ springdoc:
 app:
   jwt:
     secret: ${JWT_SECRET}
+  admin:
+    email: ${ADMIN_EMAIL}
+    default-password: ${ADMIN_PASSWORD}
   auth:
     email-from: ${APP_EMAIL_FROM:${MAIL_USERNAME:noreply@skytouch.com}}
-    log-otp: ${APP_LOG_OTP:false}
+    log-otp: ${APP_LOG_OTP:true}
     mail-send-enabled: ${MAIL_SEND_ENABLED:true}
     otp:
       length: 6
@@ -66,3 +69,10 @@ address:
     enabled: ${ADDRESS_VALIDATION_ENABLED:false}
     api-key: ${GOOGLE_ADDRESS_API_KEY:}
     endpoint: ${GOOGLE_ADDRESS_VALIDATION_ENDPOINT:https://maps.googleapis.com/maps/api/geocode/json}
+
+paystack:
+  secret-key: ${PAYSTACK_SECRET_KEY:sk_test_d00a8a661d4dec8e0eeae18fac6ccfa331bce99c}
+  public-key: ${PAYSTACK_PUBLIC_KEY:pk_test_6a1a73b27bfabc495f2566160f295a1e66c93fd0}
+  callback-url: ${PAYSTACK_CALLBACK_URL:https://dawnlike-solomon-lightfootedly.ngrok-free.dev/api/v1/webhooks/paystack}
+  webhook-url: ${PAYSTACK_WEBHOOK_URL:https://dawnlike-solomon-lightfootedly.ngrok-free.dev/api/v1/webhooks/paystack}
+  api-url: https://api.paystack.co

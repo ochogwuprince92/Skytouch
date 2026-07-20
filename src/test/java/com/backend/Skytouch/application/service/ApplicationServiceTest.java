@@ -84,7 +84,7 @@ class ApplicationServiceTest {
         when(jobSeekerRepository.findByUser_Id(seekerId)).thenReturn(Optional.of(seeker));
         when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
         when(applicationRepository.existsByJob_IdAndJobSeeker_Id(jobId, seekerId)).thenReturn(false);
-        when(applicationMapper.toEntity(job, seeker, "I am interested")).thenReturn(entity);
+        when(applicationMapper.toEntity(job, seeker, "I am interested", "https://cdn.example.com/cv.pdf")).thenReturn(entity);
         when(applicationRepository.save(entity)).thenReturn(entity);
         when(applicationMapper.toResponse(entity)).thenReturn(
                 com.backend.Skytouch.application.apimodel.ApplicationResponse.builder()

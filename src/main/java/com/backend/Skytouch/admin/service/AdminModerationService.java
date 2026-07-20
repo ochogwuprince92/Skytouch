@@ -1,6 +1,8 @@
 package com.backend.Skytouch.admin.service;
 
 import com.backend.Skytouch.admin.apimodel.CompanyModerationResponse;
+import com.backend.Skytouch.admin.apimodel.JobModerationResponse;
+import com.backend.Skytouch.admin.apimodel.UserModerationResponse;
 import com.backend.Skytouch.audit.service.AuditService;
 import com.backend.Skytouch.common.apimodel.PageResponse;
 import com.backend.Skytouch.common.enums.AuditAction;
@@ -47,6 +49,45 @@ public class AdminModerationService {
         Pageable pageable = PaginationUtils.pageable(page, size, Sort.by(Sort.Direction.ASC, "createdAt"));
         Page<Company> results = companyRepository.findByStatus(CompanyStatus.PENDING, pageable);
         return PaginationUtils.mapPage(results, this::toModerationResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<CompanyModerationResponse> listCompanies(int page, int size, String status) {
+        Pageable pageable = PaginationUtils.pageable(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Company> results;
+        if (status != null && !status.isBlank()) {
+            try {
+                CompanyStatus statusEnum = CompanyStatus.valueOf(status.toUpperCase());
+                results = companyRepository.findByStatus(statusEnum, pageable);
+            } catch (IllegalArgumentException e) {
+                results = companyRepository.findAll(pageable);
+            }
+        } else {
+            results = companyRepository.findAll(pageable);
+        }
+        return PaginationUtils.mapPage(results, this::toModerationResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<UserModerationResponse> listUsers(int page, int size, String email, String status, Boolean emailVerified) {
+        Pageable pageable = PaginationUtils.pageable(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Users> results;
+        
+        if (email != null && !email.isBlank()) {
+            results = userRepository.findByEmailContaining(email, pageable);
+        } else if (status != null && !status.isBlank()) {
+            try {
+                UserStatus statusEnum = UserStatus.valueOf(status.toUpperCase());
+                results = userRepository.findByStatus(statusEnum, pageable);
+            } catch (IllegalArgumentException e) {
+                results = userRepository.findAll(pageable);
+            }
+        } else if (emailVerified != null && emailVerified == false) {
+            results = userRepository.findByEmailVerifiedFalse(pageable);
+        } else {
+            results = userRepository.findAll(pageable);
+        }
+        return PaginationUtils.mapPage(results, this::toUserResponse);
     }
 
     @Transactional
@@ -104,6 +145,58 @@ public class AdminModerationService {
     }
 
     @Transactional
+    public void activateUser(UUID userId, UUID adminUserId) {
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        if (user.getRole() == UserRole.ADMIN) {
+            throw new ResourceNotFoundException("Admin accounts cannot be modified via this endpoint");
+        }
+        user.setStatus(UserStatus.ACTIVE);
+        userRepository.save(user);
+
+        Notification notification = Notification.builder()
+                .user(user)
+                .type(NotificationType.ACCOUNT_ACTIVATED)
+                .title("Account reactivated")
+                .message("Your Skytouch account has been reactivated. You can now access your account.")
+                .read(false)
+                .build();
+        notificationRepository.save(notification);
+        auditService.record(adminUserId, AuditAction.USER_ACTIVATED, AuditTargetType.USER,
+                userId, "Activated user: " + user.getEmail());
+    }
+
+    @Transactional
+    public void suspendCompany(UUID companyId, UUID adminUserId) {
+        Company company = getCompany(companyId);
+        if (company.getStatus() != CompanyStatus.ACTIVE) {
+            throw new ResourceNotFoundException("Only active companies can be suspended: " + companyId);
+        }
+        company.setStatus(CompanyStatus.SUSPENDED);
+        Company saved = companyRepository.save(company);
+        notifyEmployerForCompany(saved, NotificationType.COMPANY_SUSPENDED,
+                "Company suspended",
+                "Your company \"" + saved.getName() + "\" has been suspended. Contact support for details.");
+        auditService.record(adminUserId, AuditAction.COMPANY_SUSPENDED, AuditTargetType.COMPANY,
+                saved.getId(), "Suspended company: " + saved.getName());
+    }
+
+    @Transactional
+    public void activateCompany(UUID companyId, UUID adminUserId) {
+        Company company = getCompany(companyId);
+        if (company.getStatus() != CompanyStatus.SUSPENDED) {
+            throw new ResourceNotFoundException("Only suspended companies can be activated: " + companyId);
+        }
+        company.setStatus(CompanyStatus.ACTIVE);
+        Company saved = companyRepository.save(company);
+        notifyEmployerForCompany(saved, NotificationType.COMPANY_ACTIVATED,
+                "Company reactivated",
+                "Your company \"" + saved.getName() + "\" has been reactivated. You can now publish jobs.");
+        auditService.record(adminUserId, AuditAction.COMPANY_ACTIVATED, AuditTargetType.COMPANY,
+                saved.getId(), "Activated company: " + saved.getName());
+    }
+
+    @Transactional
     public void forceCloseJob(UUID jobId, UUID adminUserId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
@@ -120,6 +213,23 @@ public class AdminModerationService {
     @Transactional(readOnly = true)
     public long countPendingCompanies() {
         return companyRepository.countByStatus(CompanyStatus.PENDING);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<JobModerationResponse> listJobs(int page, int size, String status) {
+        Pageable pageable = PaginationUtils.pageable(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Job> results;
+        if (status != null && !status.isBlank()) {
+            try {
+                JobStatus statusEnum = JobStatus.valueOf(status.toUpperCase());
+                results = jobRepository.findByStatus(statusEnum, pageable);
+            } catch (IllegalArgumentException e) {
+                results = jobRepository.findAll(pageable);
+            }
+        } else {
+            results = jobRepository.findAll(pageable);
+        }
+        return PaginationUtils.mapPage(results, this::toJobModerationResponse);
     }
 
     private Company getCompany(UUID companyId) {
@@ -144,8 +254,34 @@ public class AdminModerationService {
         return CompanyModerationResponse.builder()
                 .id(company.getId())
                 .name(company.getName())
-                .industry(company.getIndustry())
+                .industry(company.getIndustry() != null ? company.getIndustry().name() : null)
                 .status(company.getStatus())
+                .build();
+    }
+
+    private UserModerationResponse toUserResponse(Users user) {
+        return UserModerationResponse.builder()
+                .id(user.getId().toString())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .status(user.getStatus().name())
+                .emailVerified(user.getEmailVerified())
+                .createdAt(user.getCreatedAt().toString())
+                .build();
+    }
+
+    private JobModerationResponse toJobModerationResponse(Job job) {
+        return JobModerationResponse.builder()
+                .id(job.getId())
+                .companyName(job.getCompany() != null ? job.getCompany().getName() : "")
+                .title(job.getTitle())
+                .employmentType(job.getEmploymentType())
+                .workMode(job.getWorkMode())
+                .salaryMin(job.getSalaryMin())
+                .salaryMax(job.getSalaryMax())
+                .locationState(job.getLocationState())
+                .status(job.getStatus())
+                .createdAt(job.getCreatedAt())
                 .build();
     }
 }

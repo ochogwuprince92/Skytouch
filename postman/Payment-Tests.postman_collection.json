@@ -1,0 +1,56 @@
+{
+  "info": {
+    "name": "Skytouch Payment Tests",
+    "description": "Paystack payment integration tests for Skytouch",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Initialize Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"test@example.com\",\n  \"amount\": 5000,\n  \"currency\": \"NGN\",\n  \"callbackUrl\": \"https://dawnlike-solomon-lightfootedly.ngrok-free.dev/api/v1/webhooks/paystack\",\n  \"metadata\": {\n    \"userId\": \"test-user-123\",\n    \"description\": \"Test payment\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/payments/initialize",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "payments", "initialize"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Verify Payment",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/payments/verify/{{paymentReference}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "payments", "verify", "{{paymentReference}}"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8083",
+      "type": "string"
+    },
+    {
+      "key": "paymentReference",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

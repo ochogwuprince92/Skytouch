@@ -23,6 +23,8 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
 
     long countByStatus(JobStatus status);
 
+    Page<Job> findByStatus(JobStatus status, Pageable pageable);
+
     @Query("""
             SELECT j FROM Job j JOIN j.company c
             WHERE j.status = :status

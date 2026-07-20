@@ -13,4 +13,5 @@ public class ApplicationStatusUpdateRequest {
 
     @NotNull(message = "Application status is required")
     private ApplicationStatus status;
+    private String comment;
 }

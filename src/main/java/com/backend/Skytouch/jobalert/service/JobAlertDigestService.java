@@ -51,7 +51,7 @@ public class JobAlertDigestService {
 
         Map<UUID, List<Job>> jobsByUserId = new HashMap<>();
         for (Job job : recentJobs) {
-            String industry = job.getCompany() != null ? job.getCompany().getIndustry() : null;
+            String industry = job.getCompany() != null && job.getCompany().getIndustry() != null ? job.getCompany().getIndustry().name() : null;
             List<UUID> userIds = jobAlertRepository.findMatchingSeekerUserIds(
                     job.getTitle(),
                     job.getDescription(),

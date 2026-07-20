@@ -1,5 +1,8 @@
 package com.backend.Skytouch.jobseeker.entity;
 
+import com.backend.Skytouch.common.enums.Gender;
+import com.backend.Skytouch.common.enums.JobRole;
+import com.backend.Skytouch.common.enums.Qualification;
 import com.backend.Skytouch.common.enums.UserStatus;
 import com.backend.Skytouch.user.entity.Users;
 import jakarta.persistence.*;
@@ -44,7 +47,8 @@ public class JobSeeker {
     @Column(nullable = false)
     private String phone;
 
-    private String gender;
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
 
     private LocalDate birthday;
 
@@ -52,9 +56,11 @@ public class JobSeeker {
 
     private String nin;
 
-    private String job;
+    @Enumerated(EnumType.STRING)
+    private JobRole job;
 
-    private String qualification;
+    @Enumerated(EnumType.STRING)
+    private Qualification qualification;
 
     @Column
     private String cvUrl;

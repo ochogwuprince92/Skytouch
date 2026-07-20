@@ -2,6 +2,7 @@ package com.backend.Skytouch.admin.service;
 
 import com.backend.Skytouch.admin.apimodel.AdminDashboardResponse;
 import com.backend.Skytouch.application.repository.JobApplicationRepository;
+import com.backend.Skytouch.audit.repository.AuditEventRepository;
 import com.backend.Skytouch.common.enums.ApplicationStatus;
 import com.backend.Skytouch.common.enums.JobStatus;
 import com.backend.Skytouch.common.enums.UserRole;
@@ -20,6 +21,7 @@ public class AdminDashboardService {
     private final AdminModerationService adminModerationService;
     private final JobRepository jobRepository;
     private final JobApplicationRepository applicationRepository;
+    private final AuditEventRepository auditEventRepository;
 
     @Transactional(readOnly = true)
     public AdminDashboardResponse getDashboard() {
@@ -34,6 +36,7 @@ public class AdminDashboardService {
                 .activeJobs(jobRepository.countByStatus(JobStatus.ACTIVE))
                 .totalApplications(applicationRepository.count())
                 .totalHires(applicationRepository.countByStatus(ApplicationStatus.HIRED))
+                .totalAuditEvents(auditEventRepository.count())
                 .build();
     }
 }

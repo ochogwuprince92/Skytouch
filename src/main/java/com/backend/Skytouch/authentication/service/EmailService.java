@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -48,20 +49,34 @@ public class EmailService {
                         + "Log in to Skytouch to review the application.");
     }
 
-    public void sendApplicationStatusUpdate(String toEmail, String jobTitle, String statusLabel) {
+    public void sendApplicationStatusUpdate(String toEmail, String jobTitle, String statusLabel, String comment) {
+        String message = "Your application for \"" + jobTitle + "\" is now " + statusLabel + ".\n\n";
+        
+        if (StringUtils.hasText(comment)) {
+            message += "Reason: " + comment + "\n\n";
+        }
+        
+        message += "Log in to Skytouch for more details.";
+        
         sendPlainEmail(
                 toEmail,
                 "Application update: " + jobTitle,
-                "Your application for \"" + jobTitle + "\" is now " + statusLabel + ".\n\n"
-                        + "Log in to Skytouch for more details.");
+                message);
     }
 
-    public void sendInterviewScheduled(String toEmail, String jobTitle, String scheduledAt) {
+    public void sendInterviewScheduled(String toEmail, String jobTitle, String scheduledAt, String comment) {
+        String message = "Your interview for \"" + jobTitle + "\" is scheduled for " + scheduledAt + ".\n\n";
+        
+        if (StringUtils.hasText(comment)) {
+            message += "Message: " + comment + "\n\n";
+        }
+        
+        message += "Log in to Skytouch for details.";
+        
         sendPlainEmail(
                 toEmail,
                 "Interview scheduled: " + jobTitle,
-                "Your interview for \"" + jobTitle + "\" is scheduled for " + scheduledAt + ".\n\n"
-                        + "Log in to Skytouch for details.");
+                message);
     }
 
     public void sendInterviewUpdated(String toEmail, String jobTitle, String details) {
@@ -79,12 +94,19 @@ public class EmailService {
                         + "Log in to Skytouch to read and reply.");
     }
 
-    public void sendOfferExtended(String toEmail, String jobTitle, String companyName) {
+    public void sendOfferExtended(String toEmail, String jobTitle, String companyName, String comment) {
+        String message = "Congratulations! You received an offer for \"" + jobTitle + "\" at " + companyName + ".\n\n";
+        
+        if (StringUtils.hasText(comment)) {
+            message += "Message: " + comment + "\n\n";
+        }
+        
+        message += "Log in to Skytouch to review and respond.";
+        
         sendPlainEmail(
                 toEmail,
                 "Job offer: " + jobTitle,
-                "Congratulations! You received an offer for \"" + jobTitle + "\" at " + companyName + ".\n\n"
-                        + "Log in to Skytouch to review and respond.");
+                message);
     }
 
     public void sendOfferAccepted(String toEmail, String seekerName, String jobTitle) {
@@ -95,11 +117,17 @@ public class EmailService {
                         + "The position has been filled.");
     }
 
-    public void sendOfferDeclined(String toEmail, String seekerName, String jobTitle) {
+    public void sendOfferDeclined(String toEmail, String seekerName, String jobTitle, String comment) {
+        String message = seekerName + " declined your offer for \"" + jobTitle + "\".\n\n";
+        
+        if (StringUtils.hasText(comment)) {
+            message += "Reason: " + comment + "\n\n";
+        }
+        
         sendPlainEmail(
                 toEmail,
                 "Offer declined: " + jobTitle,
-                seekerName + " declined your offer for \"" + jobTitle + "\".");
+                message);
     }
 
     public void sendHiredConfirmation(String toEmail, String jobTitle) {

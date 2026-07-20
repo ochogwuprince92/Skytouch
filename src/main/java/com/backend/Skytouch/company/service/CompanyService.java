@@ -51,7 +51,18 @@ public class CompanyService {
         employer.setCompanyName(savedCompany.getName());
         employerRepository.save(employer);
 
+        // Force immediate flush to ensure transaction is committed before returning
+        employerRepository.flush();
+
         return companyMapper.toResponse(savedCompany);
+    }
+
+    @Transactional
+    public Company createForAdmin(CompanyCreateRequest request) {
+        Company company = companyMapper.toEntity(request);
+        company.setStatus(CompanyStatus.ACTIVE); // Admin-created companies are auto-approved
+        applyValidatedAddress(company, request.getAddress());
+        return companyRepository.save(company);
     }
 
     @Transactional(readOnly = true)

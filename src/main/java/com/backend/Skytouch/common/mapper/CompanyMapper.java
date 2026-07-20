@@ -1,6 +1,7 @@
 package com.backend.Skytouch.common.mapper;
 
 import com.backend.Skytouch.common.enums.CompanyStatus;
+import com.backend.Skytouch.common.enums.Industry;
 import com.backend.Skytouch.company.apimodel.CompanyCreateRequest;
 import com.backend.Skytouch.company.apimodel.CompanyResponse;
 import com.backend.Skytouch.company.apimodel.CompanyUpdateRequest;
@@ -29,7 +30,7 @@ public class CompanyMapper {
             company.setDescription(request.getDescription());
         }
         if (request.getIndustry() != null) {
-            company.setIndustry(request.getIndustry());
+            company.setIndustry(Industry.valueOf(request.getIndustry().toUpperCase()));
         }
         if (request.getWebsite() != null) {
             company.setWebsite(request.getWebsite());
@@ -41,7 +42,7 @@ public class CompanyMapper {
                 .id(company.getId())
                 .name(company.getName())
                 .description(company.getDescription())
-                .industry(company.getIndustry())
+                .industry(company.getIndustry() != null ? company.getIndustry().name() : null)
                 .website(company.getWebsite())
                 .logoUrl(company.getLogoUrl())
                 .addressLine(company.getAddressLine())

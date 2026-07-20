@@ -1,0 +1,25 @@
+package com.backend.Skytouch.common.enums;
+
+public enum Industry {
+    TECHNOLOGY,
+    FINANCE,
+    HEALTHCARE,
+    EDUCATION,
+    RETAIL,
+    MANUFACTURING,
+    CONSTRUCTION,
+    TRANSPORTATION,
+    AGRICULTURE,
+    ENERGY,
+    TELECOMMUNICATIONS,
+    MEDIA,
+    HOSPITALITY,
+    REAL_ESTATE,
+    LEGAL,
+    CONSULTING,
+    GOVERNMENT,
+    NON_PROFIT,
+    AUTOMOTIVE,
+    PHARMACEUTICALS,
+    OTHER
+}

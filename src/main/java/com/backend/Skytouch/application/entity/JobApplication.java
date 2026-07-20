@@ -45,6 +45,9 @@ public class JobApplication {
     @Column(name = "seeker_name")
     private String seekerName;
 
+    @Column(name = "comment", columnDefinition = "TEXT")
+    private String comment;
+
     @CreationTimestamp
     @Column(name = "applied_at", nullable = false, updatable = false)
     private LocalDateTime appliedAt;

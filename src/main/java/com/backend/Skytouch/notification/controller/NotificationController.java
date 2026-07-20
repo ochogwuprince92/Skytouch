@@ -19,7 +19,7 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping("/me")
-    @PreAuthorize("hasAnyRole('JOB_SEEKER', 'EMPLOYER')")
+    @PreAuthorize("hasAnyRole('JOB_SEEKER', 'EMPLOYER', 'ADMIN')")
     public PageResponse<NotificationResponse> getMyNotifications(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
@@ -27,19 +27,19 @@ public class NotificationController {
     }
 
     @GetMapping("/me/unread-count")
-    @PreAuthorize("hasAnyRole('JOB_SEEKER', 'EMPLOYER')")
+    @PreAuthorize("hasAnyRole('JOB_SEEKER', 'EMPLOYER', 'ADMIN')")
     public UnreadCountResponse getUnreadCount() {
         return notificationService.countUnread(SecurityUtils.getCurrentUser().getEmail());
     }
 
     @PatchMapping("/me/{id}/read")
-    @PreAuthorize("hasAnyRole('JOB_SEEKER', 'EMPLOYER')")
+    @PreAuthorize("hasAnyRole('JOB_SEEKER', 'EMPLOYER', 'ADMIN')")
     public NotificationResponse markAsRead(@PathVariable UUID id) {
         return notificationService.markAsRead(SecurityUtils.getCurrentUser().getEmail(), id);
     }
 
     @PostMapping("/me/read-all")
-    @PreAuthorize("hasAnyRole('JOB_SEEKER', 'EMPLOYER')")
+    @PreAuthorize("hasAnyRole('JOB_SEEKER', 'EMPLOYER', 'ADMIN')")
     public void markAllAsRead() {
         notificationService.markAllAsRead(SecurityUtils.getCurrentUser().getEmail());
     }
