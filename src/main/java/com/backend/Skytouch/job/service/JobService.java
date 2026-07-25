@@ -22,6 +22,7 @@ import com.backend.Skytouch.job.entity.Job;
 import com.backend.Skytouch.job.repository.JobRepository;
 import com.backend.Skytouch.jobalert.service.JobAlertService;
 import com.backend.Skytouch.savedjob.service.SavedJobService;
+import com.backend.Skytouch.subscription.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,6 +44,7 @@ public class JobService {
     private final JobMapper jobMapper;
     private final SavedJobService savedJobService;
     private final JobAlertService jobAlertService;
+    private final SubscriptionService subscriptionService;
 
     @Transactional
     public JobResponse create(String email, JobCreateRequest request) {
@@ -72,6 +74,11 @@ public class JobService {
                 throw new BadRequestException("Employers cannot specify companyId or newCompany");
             }
             company = companyService.getLinkedCompany(email);
+        }
+
+        // Validate subscription before creating job (skip for admins)
+        if (!isAdmin) {
+            subscriptionService.validateCanPublishJob(company.getId());
         }
 
         validateSalaryRange(request.getSalaryMin(), request.getSalaryMax());
@@ -167,11 +174,11 @@ public class JobService {
     public JobResponse publish(String email, UUID id) {
         var currentUser = SecurityUtils.getCurrentUser();
         boolean isAdmin = currentUser.getRole() == UserRole.ADMIN;
-        
+
         if (!isAdmin) {
             companyService.requireActiveCompany(email);
         }
-        
+
         Job job;
         if (isAdmin) {
             job = jobRepository.findById(id)
@@ -182,10 +189,16 @@ public class JobService {
         } else {
             job = getOwnedJob(email, id);
         }
-        
+
         if (job.getStatus() != JobStatus.DRAFT) {
             throw new BadRequestException("Only draft jobs can be published");
         }
+
+        // Validate subscription before publishing job (skip for admins)
+        if (!isAdmin) {
+            subscriptionService.validateCanPublishJob(job.getCompany().getId());
+        }
+
         job.setStatus(JobStatus.ACTIVE);
         job.setPublishedAt(LocalDateTime.now());
         Job saved = jobRepository.save(job);
