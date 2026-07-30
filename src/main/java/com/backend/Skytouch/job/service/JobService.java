@@ -24,6 +24,7 @@ import com.backend.Skytouch.jobalert.service.JobAlertService;
 import com.backend.Skytouch.savedjob.service.SavedJobService;
 import com.backend.Skytouch.subscription.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -36,6 +37,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class JobService {
 
     private final JobRepository jobRepository;
@@ -83,7 +85,18 @@ public class JobService {
 
         validateSalaryRange(request.getSalaryMin(), request.getSalaryMax());
         Job job = jobMapper.toEntity(request, company);
-        return jobMapper.toResponse(jobRepository.save(job));
+        Job savedJob = jobRepository.save(job);
+
+        // Increment slots used for non-admin job postings
+        if (!isAdmin) {
+            try {
+                subscriptionService.incrementSlotsUsed(company.getId());
+            } catch (Exception e) {
+                log.warn("Failed to increment slots used for company {}: {}", company.getId(), e.getMessage());
+            }
+        }
+
+        return jobMapper.toResponse(savedJob);
     }
 
     @Transactional(readOnly = true)

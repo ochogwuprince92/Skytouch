@@ -30,6 +30,7 @@ public class SubscriptionService {
     private final JobRepository jobRepository;
 
     private static final Map<PlanType, PlanConfig> PLAN_CONFIGS = Map.of(
+        PlanType.FREE, new PlanConfig("Free Tier", "Try Skytouch with 3 job posts", BigDecimal.ZERO, BillingCycle.MONTHLY, 3, false),
         PlanType.BASIC, new PlanConfig("Basic", "Perfect for small businesses", new BigDecimal("20000"), BillingCycle.MONTHLY, 5, false),
         PlanType.STANDARD, new PlanConfig("Standard", "Ideal for growing companies", new BigDecimal("50000"), BillingCycle.MONTHLY, 15, false),
         PlanType.PREMIUM, new PlanConfig("Premium", "For large organizations", new BigDecimal("100000"), BillingCycle.YEARLY, 0, true)
@@ -46,6 +47,7 @@ public class SubscriptionService {
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expiresAt = calculateExpiryDate(now, request.getBillingCycle());
+        PlanConfig config = PLAN_CONFIGS.get(request.getPlan());
 
         EmployerSubscription subscription = EmployerSubscription.builder()
                 .company(company)
@@ -54,6 +56,8 @@ public class SubscriptionService {
                 .startDate(now)
                 .expiresAt(expiresAt)
                 .billingCycle(request.getBillingCycle())
+                .slotsAllocated(config.maxJobSlots())
+                .slotsUsed(0)
                 .build();
 
         EmployerSubscription saved = subscriptionRepository.save(subscription);
@@ -72,6 +76,35 @@ public class SubscriptionService {
         subscription.setStatus(SubscriptionStatus.ACTIVE);
         subscription.setStartDate(LocalDateTime.now());
         EmployerSubscription saved = subscriptionRepository.save(subscription);
+        return mapToResponse(saved);
+    }
+
+    @Transactional
+    public SubscriptionResponse assignFreeTier(UUID companyId) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+
+        if (subscriptionRepository.existsByCompanyId(companyId)) {
+            throw new BadRequestException("Company already has a subscription");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiresAt = now.plusMonths(1);
+        PlanConfig config = PLAN_CONFIGS.get(PlanType.FREE);
+
+        EmployerSubscription subscription = EmployerSubscription.builder()
+                .company(company)
+                .plan(PlanType.FREE)
+                .status(SubscriptionStatus.ACTIVE)
+                .startDate(now)
+                .expiresAt(expiresAt)
+                .billingCycle(BillingCycle.MONTHLY)
+                .slotsAllocated(config.maxJobSlots())
+                .slotsUsed(0)
+                .build();
+
+        EmployerSubscription saved = subscriptionRepository.save(subscription);
+        log.info("Assigned FREE tier subscription to company {}", companyId);
         return mapToResponse(saved);
     }
 
@@ -148,7 +181,7 @@ public class SubscriptionService {
         PlanConfig config = PLAN_CONFIGS.get(subscription.getPlan());
 
         boolean unlimited = config.unlimited();
-        Integer remainingSlots = unlimited ? null : Math.max(0, config.maxJobSlots() - activeJobs);
+        Integer remainingSlots = unlimited ? null : Math.max(0, subscription.getSlotsAllocated() - subscription.getSlotsUsed());
         boolean canPublish = unlimited || remainingSlots > 0;
 
         boolean isExpired = subscription.getExpiresAt().isBefore(LocalDateTime.now());
@@ -162,6 +195,8 @@ public class SubscriptionService {
                 .status(subscription.getStatus())
                 .expiresAt(subscription.getExpiresAt())
                 .activeJobs(activeJobs)
+                .slotsAllocated(subscription.getSlotsAllocated())
+                .slotsUsed(subscription.getSlotsUsed())
                 .remainingSlots(remainingSlots)
                 .unlimited(unlimited)
                 .canPublish(canPublish && subscription.getStatus() == SubscriptionStatus.ACTIVE && !isExpired)
@@ -175,6 +210,40 @@ public class SubscriptionService {
                 throw new BadRequestException("Subscription is not active. Please renew your subscription to publish jobs.");
             }
             throw new BadRequestException("Job slot limit reached. Upgrade your subscription to publish more jobs.");
+        }
+    }
+
+    @Transactional
+    public void incrementSlotsUsed(UUID companyId) {
+        EmployerSubscription subscription = subscriptionRepository.findByCompanyId(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription not found"));
+        
+        PlanConfig config = PLAN_CONFIGS.get(subscription.getPlan());
+        if (config.unlimited()) {
+            return; // Unlimited plans don't track slots
+        }
+        
+        if (subscription.getSlotsUsed() < subscription.getSlotsAllocated()) {
+            subscription.setSlotsUsed(subscription.getSlotsUsed() + 1);
+            subscriptionRepository.save(subscription);
+            log.info("Incremented slots used for company {}: {}/{}", companyId, subscription.getSlotsUsed(), subscription.getSlotsAllocated());
+        }
+    }
+
+    @Transactional
+    public void decrementSlotsUsed(UUID companyId) {
+        EmployerSubscription subscription = subscriptionRepository.findByCompanyId(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription not found"));
+        
+        PlanConfig config = PLAN_CONFIGS.get(subscription.getPlan());
+        if (config.unlimited()) {
+            return; // Unlimited plans don't track slots
+        }
+        
+        if (subscription.getSlotsUsed() > 0) {
+            subscription.setSlotsUsed(subscription.getSlotsUsed() - 1);
+            subscriptionRepository.save(subscription);
+            log.info("Decremented slots used for company {}: {}/{}", companyId, subscription.getSlotsUsed(), subscription.getSlotsAllocated());
         }
     }
 

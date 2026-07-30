@@ -18,6 +18,8 @@ public class UsageResponse {
     private SubscriptionStatus status;
     private LocalDateTime expiresAt;
     private int activeJobs;
+    private int slotsAllocated;
+    private int slotsUsed;
     private Integer remainingSlots;
     private boolean unlimited;
     private boolean canPublish;

@@ -47,6 +47,12 @@ public class EmployerSubscription {
     @Column(nullable = false)
     private BillingCycle billingCycle;
 
+    @Column(name = "slots_allocated", nullable = false)
+    private Integer slotsAllocated;
+
+    @Column(name = "slots_used", nullable = false)
+    private Integer slotsUsed;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
