@@ -1,7 +1,7 @@
 HELP.md
 .env
 .env.jenkins
-.env.docker
+../../flexisaf/smartLedger/.env.docker
 docker-compose.override.yml
 target/
 .mvn/wrapper/maven-wrapper.jar

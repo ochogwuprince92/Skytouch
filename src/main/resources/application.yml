@@ -1,13 +1,12 @@
 server:
-  port: ${PORT:8083}
+  port: ${PORT}
+
 
 spring:
-  config:
-    import: optional:file:.env[.properties]
   application:
     name: Skytouch
   profiles:
-    active: local
+    active: prod
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
