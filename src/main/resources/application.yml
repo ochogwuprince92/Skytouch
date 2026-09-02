@@ -50,7 +50,7 @@ app:
     session:
       expiration-ms: 86400000
   storage:
-    cloudinary-enabled: ${CLOUDINARY_ENABLED:true}
+    cloudinary-enabled: ${CLOUDINARY_ENABLED:false}
     local-upload-dir: ${LOCAL_UPLOAD_DIR:uploads}
   job-alert:
     digest:
@@ -66,12 +66,12 @@ cloudinary:
 address:
   validation:
     enabled: ${ADDRESS_VALIDATION_ENABLED:false}
-    api-key: ${GOOGLE_ADDRESS_API_KEY:}
+    api-key: ${GOOGLE_ADDRESS_API_KEY}
     endpoint: ${GOOGLE_ADDRESS_VALIDATION_ENDPOINT:https://maps.googleapis.com/maps/api/geocode/json}
 
 paystack:
-  secret-key: ${PAYSTACK_SECRET_KEY:sk_test_d00a8a661d4dec8e0eeae18fac6ccfa331bce99c}
-  public-key: ${PAYSTACK_PUBLIC_KEY:pk_test_6a1a73b27bfabc495f2566160f295a1e66c93fd0}
-  callback-url: ${PAYSTACK_CALLBACK_URL:https://dawnlike-solomon-lightfootedly.ngrok-free.dev/api/v1/webhooks/paystack}
-  webhook-url: ${PAYSTACK_WEBHOOK_URL:https://dawnlike-solomon-lightfootedly.ngrok-free.dev/api/v1/webhooks/paystack}
+  secret-key: ${PAYSTACK_SECRET_KEY}
+  public-key: ${PAYSTACK_PUBLIC_KEY}
+  callback-url: ${PAYSTACK_CALLBACK_URL}
+  webhook-url: ${PAYSTACK_WEBHOOK_URL}
   api-url: https://api.paystack.co
