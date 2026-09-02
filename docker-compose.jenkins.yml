@@ -2,6 +2,7 @@ services:
   postgres-ci:
     image: postgres:16-alpine
     container_name: skytouch-jenkins-postgres
+    restart: unless-stopped
     env_file:
       - .env.jenkins
     environment:
@@ -19,15 +20,15 @@ services:
     container_name: skytouch-jenkins
     privileged: true
     ports:
-      - "8080:8080"
+      - "8083:8080"
       - "50000:50000"
     env_file:
       - .env.jenkins
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /run/podman/podman.sock:/var/run/podman.sock
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      CONTAINER_HOST: unix:///var/run/podman.sock
+      CONTAINER_HOST: unix:///var/run/docker.sock
     depends_on:
       postgres-ci:
         condition: service_healthy

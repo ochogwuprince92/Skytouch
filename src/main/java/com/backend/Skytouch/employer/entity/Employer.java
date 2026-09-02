@@ -25,7 +25,7 @@ public class Employer {
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_username", referencedColumnName = "email", nullable = false, unique = true)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
     private Users user;
 
     @Enumerated(EnumType.STRING)

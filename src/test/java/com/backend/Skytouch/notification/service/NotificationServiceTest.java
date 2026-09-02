@@ -120,7 +120,7 @@ class NotificationServiceTest {
         verify(notificationRepository).save(captor.capture());
         assertThat(captor.getValue().getType()).isEqualTo(NotificationType.APPLICATION_STATUS_UPDATED);
         verify(emailService).sendApplicationStatusUpdate(
-                "seeker@example.com", "Backend Engineer", "shortlisted");
+                "seeker@example.com", "Backend Engineer", "shortlisted", null);
     }
 
     @Test

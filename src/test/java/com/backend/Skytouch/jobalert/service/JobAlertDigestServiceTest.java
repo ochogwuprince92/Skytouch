@@ -2,6 +2,7 @@ package com.backend.Skytouch.jobalert.service;
 
 import com.backend.Skytouch.common.enums.CompanyStatus;
 import com.backend.Skytouch.common.enums.EmploymentType;
+import com.backend.Skytouch.common.enums.Industry;
 import com.backend.Skytouch.common.enums.JobStatus;
 import com.backend.Skytouch.common.enums.UserRole;
 import com.backend.Skytouch.common.enums.WorkMode;
@@ -59,7 +60,7 @@ class JobAlertDigestServiceTest {
         userId = UUID.randomUUID();
         seekerId = UUID.randomUUID();
         jobId = UUID.randomUUID();
-        Company company = Company.builder().id(UUID.randomUUID()).name("Acme").industry("Tech").build();
+        Company company = Company.builder().id(UUID.randomUUID()).name("Acme").industry(Industry.TECHNOLOGY).build();
         job = Job.builder()
                 .id(jobId)
                 .company(company)
@@ -83,7 +84,7 @@ class JobAlertDigestServiceTest {
                 .thenReturn(List.of(job));
         when(jobAlertRepository.findMatchingSeekerUserIds(
                 eq(job.getTitle()), eq(job.getDescription()), eq(job.getEmploymentType()),
-                eq(job.getWorkMode()), eq(job.getLocationState()), eq("Tech")))
+                eq(job.getWorkMode()), eq(job.getLocationState()), eq("TECHNOLOGY")))
                 .thenReturn(List.of(userId));
         when(jobSeekerRepository.findByUser_Id(userId)).thenReturn(Optional.of(seeker));
         when(deliveryService.wasDelivered(seekerId, jobId)).thenReturn(false);

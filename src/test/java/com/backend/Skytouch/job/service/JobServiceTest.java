@@ -2,6 +2,7 @@ package com.backend.Skytouch.job.service;
 
 import com.backend.Skytouch.common.enums.CompanyStatus;
 import com.backend.Skytouch.common.enums.EmploymentType;
+import com.backend.Skytouch.common.enums.Industry;
 import com.backend.Skytouch.common.enums.JobStatus;
 import com.backend.Skytouch.common.enums.WorkMode;
 import com.backend.Skytouch.common.exception.BadRequestException;
@@ -184,7 +185,7 @@ class JobServiceTest {
 
     @Test
     void search_returnsActiveJobsOnly() {
-        Company company = Company.builder().id(UUID.randomUUID()).name("Acme Ltd").industry("Technology").build();
+        Company company = Company.builder().id(UUID.randomUUID()).name("Acme Ltd").industry(Industry.TECHNOLOGY).build();
         Job job = Job.builder()
                 .id(UUID.randomUUID())
                 .company(company)
@@ -199,7 +200,7 @@ class JobServiceTest {
                 eq(EmploymentType.FULL_TIME),
                 eq(WorkMode.REMOTE),
                 eq("Lagos"),
-                eq("Technology"),
+                eq("TECHNOLOGY"),
                 eq(CompanyStatus.ACTIVE),
                 any(Pageable.class))).thenReturn(page);
         when(jobMapper.toResponse(job)).thenReturn(
@@ -209,7 +210,7 @@ class JobServiceTest {
                         .build());
 
         var response = jobService.search(
-                "engineer", EmploymentType.FULL_TIME, WorkMode.REMOTE, "Lagos", "Technology", 0, 20);
+                "engineer", EmploymentType.FULL_TIME, WorkMode.REMOTE, "Lagos", "TECHNOLOGY", 0, 20);
 
         assertThat(response.getContent()).hasSize(1);
         assertThat(response.getTotalElements()).isEqualTo(1);

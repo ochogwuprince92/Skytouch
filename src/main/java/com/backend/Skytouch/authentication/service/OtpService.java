@@ -13,7 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Service
@@ -44,15 +46,16 @@ public class OtpService {
 
     @Transactional
     public void sendOtp(UUID userId, String email, OtpPurpose purpose) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
         otpCodeRepository.invalidatePending(userId, purpose, now);
 
         String otp = generateOtp();
+        LocalDateTime expiresAt = now.plus(Duration.ofMillis(authProperties.getOtp().getExpirationMs()));
         OtpCode otpCode = OtpCode.builder()
                 .userId(userId)
                 .codeHash(passwordEncoder.encode(otp))
                 .purpose(purpose)
-                .expiresAt(now.plus(Duration.ofMillis(authProperties.getOtp().getExpirationMs())))
+                .expiresAt(expiresAt)
                 .build();
 
         otpCodeRepository.save(otpCode);
@@ -60,6 +63,9 @@ public class OtpService {
         if (authProperties.isLogOtp()) {
             log.info("[OTP] purpose={} email={} code={}", purpose, email, otp);
         }
+
+        log.info("[OTP DEBUG] Created OTP for userId={} purpose={} now={} expiresAt={} expirationMs={}",
+                userId, purpose, now, expiresAt, authProperties.getOtp().getExpirationMs());
 
         // ✅ LOGIN removed — only EMAIL_VERIFICATION and PASSWORD_RESET
         if (purpose == OtpPurpose.EMAIL_VERIFICATION) {
@@ -71,10 +77,17 @@ public class OtpService {
 
     @Transactional
     public void verifyOtp(UUID userId, String rawOtp, OtpPurpose purpose) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+        log.info("[OTP DEBUG] Verifying OTP for userId={} purpose={} now={}", userId, purpose, now);
+
         OtpCode otpCode = otpCodeRepository
                 .findByUserIdAndPurposeAndConsumedAtIsNullAndExpiresAtAfter(userId, purpose, now)
-                .orElseThrow(() -> new UnauthorizedException("Invalid or expired OTP"));
+                .orElseThrow(() -> {
+                    log.error("[OTP DEBUG] OTP not found or expired for userId={} purpose={} now={}", userId, purpose, now);
+                    return new UnauthorizedException("Invalid or expired OTP");
+                });
+
+        log.info("[OTP DEBUG] Found OTP: expiresAt={} attempts={}", otpCode.getExpiresAt(), otpCode.getAttempts());
 
         if (otpCode.getAttempts() >= authProperties.getOtp().getMaxAttempts()) {
             otpCode.setConsumedAt(now);
@@ -90,6 +103,7 @@ public class OtpService {
 
         otpCode.setConsumedAt(now);
         otpCodeRepository.save(otpCode);
+        log.info("[OTP DEBUG] OTP verified successfully for userId={}", userId);
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────

@@ -1,11 +1,12 @@
 HELP.md
 .env
 .env.jenkins
+../../flexisaf/smartLedger/.env.docker
+docker-compose.override.yml
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-
 ### STS ###
 .apt_generated
 .classpath
@@ -16,6 +17,8 @@ target/
 .sts4-cache
 *.application.yml
 *.application-local.yml
+##uploads
+uploads/jobseekers/cv/
 
 ### IntelliJ IDEA ###
 .idea

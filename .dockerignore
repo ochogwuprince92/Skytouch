@@ -6,3 +6,4 @@ target/
 *.iml
 *.m
 .env.*
+../../flexisaf/smartLedger/.env.docker

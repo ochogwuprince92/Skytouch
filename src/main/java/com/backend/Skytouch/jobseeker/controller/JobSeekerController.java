@@ -43,6 +43,12 @@ public class JobSeekerController {
         return jobSeekerService.updateKyc(SecurityUtils.getCurrentUser().getEmail(), request);
     }
 
+    @PostMapping(value = "/me/cv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public java.util.Map<String, String> uploadCv(@RequestParam("cv") org.springframework.web.multipart.MultipartFile cv) {
+        String cvUrl = jobSeekerService.uploadCv(SecurityUtils.getCurrentUser().getEmail(), cv);
+        return java.util.Map.of("cvUrl", cvUrl);
+    }
+
     @GetMapping
     public PageResponse<JobSeekerResponse> list(
             @RequestParam(defaultValue = "0") int page,
@@ -54,4 +60,5 @@ public class JobSeekerController {
     public JobSeekerResponse getById(@PathVariable UUID id) {
         return jobSeekerService.findById(id);
     }
+
 }

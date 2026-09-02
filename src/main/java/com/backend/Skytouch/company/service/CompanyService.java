@@ -15,9 +15,11 @@ import com.backend.Skytouch.company.entity.Company;
 import com.backend.Skytouch.company.repository.CompanyRepository;
 import com.backend.Skytouch.employer.entity.Employer;
 import com.backend.Skytouch.employer.repository.EmployerRepository;
+import com.backend.Skytouch.subscription.service.SubscriptionService;
 import com.backend.Skytouch.user.entity.Users;
 import com.backend.Skytouch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -26,6 +28,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CompanyService {
 
     private static final UserRole EMPLOYER_ROLE = UserRole.EMPLOYER;
@@ -35,6 +38,7 @@ public class CompanyService {
     private final UserRepository userRepository;
     private final CompanyMapper companyMapper;
     private final AddressValidationService addressValidationService;
+    private final SubscriptionService subscriptionService;
 
     @Transactional
     public CompanyResponse createForEmployer(String email, CompanyCreateRequest request) {
@@ -51,7 +55,26 @@ public class CompanyService {
         employer.setCompanyName(savedCompany.getName());
         employerRepository.save(employer);
 
+        // Auto-assign free tier subscription to new company
+        try {
+            subscriptionService.assignFreeTier(savedCompany.getId());
+            log.info("Auto-assigned FREE tier subscription to company {}", savedCompany.getId());
+        } catch (Exception e) {
+            log.warn("Failed to auto-assign FREE tier subscription to company {}: {}", savedCompany.getId(), e.getMessage());
+        }
+
+        // Force immediate flush to ensure transaction is committed before returning
+        employerRepository.flush();
+
         return companyMapper.toResponse(savedCompany);
+    }
+
+    @Transactional
+    public Company createForAdmin(CompanyCreateRequest request) {
+        Company company = companyMapper.toEntity(request);
+        company.setStatus(CompanyStatus.ACTIVE); // Admin-created companies are auto-approved
+        applyValidatedAddress(company, request.getAddress());
+        return companyRepository.save(company);
     }
 
     @Transactional(readOnly = true)

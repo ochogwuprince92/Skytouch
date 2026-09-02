@@ -21,6 +21,7 @@ import com.backend.Skytouch.job.entity.Job;
 import com.backend.Skytouch.job.repository.JobRepository;
 import com.backend.Skytouch.jobseeker.entity.JobSeeker;
 import com.backend.Skytouch.jobseeker.repository.JobSeekerRepository;
+import com.backend.Skytouch.jobseeker.service.FileStorageService;
 import com.backend.Skytouch.notification.service.NotificationService;
 import com.backend.Skytouch.user.entity.Users;
 import com.backend.Skytouch.user.repository.UserRepository;
@@ -31,6 +32,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -60,6 +62,7 @@ public class ApplicationService {
     private final CompanyService companyService;
     private final ApplicationMapper applicationMapper;
     private final NotificationService notificationService;
+    private final FileStorageService fileStorageService;
 
     @Transactional
     public ApplicationResponse apply(String seekerEmail, UUID jobId, ApplicationCreateRequest request) {
@@ -76,8 +79,22 @@ public class ApplicationService {
             throw new ConflictException("You have already applied to this job");
         }
 
+        // Handle CV: uploaded file takes priority, otherwise use profile CV
+        String cvUrl = jobSeeker.getCvUrl();
+        if (request != null && request.getCv() != null && !request.getCv().isEmpty()) {
+            if (!"application/pdf".equalsIgnoreCase(request.getCv().getContentType())) {
+                throw new BadRequestException("Only PDF files are allowed for CV");
+            }
+            cvUrl = fileStorageService.uploadPdf(request.getCv());
+        }
+
+        // CV is required - either uploaded or from profile
+        if (!StringUtils.hasText(cvUrl)) {
+            throw new BadRequestException("CV is required to apply for this job. Please upload your CV in your profile or provide a custom CV.");
+        }
+
         JobApplication application = applicationMapper.toEntity(
-                job, jobSeeker, request != null ? request.getCoverLetter() : null);
+                job, jobSeeker, request != null ? request.getCoverLetter() : null, cvUrl);
         JobApplication saved = applicationRepository.save(application);
         notificationService.notifyOnApplicationSubmitted(saved);
         return applicationMapper.toResponse(saved);
@@ -111,11 +128,40 @@ public class ApplicationService {
 
     @Transactional(readOnly = true)
     public PageResponse<ApplicationResponse> findApplicationsForJob(
-            String employerEmail, UUID jobId, int page, int size) {
-        Job job = getOwnedJob(employerEmail, jobId);
+            String email, UUID jobId, int page, int size) {
+        var user = com.backend.Skytouch.authentication.security.SecurityUtils.getCurrentUser();
+        boolean isAdmin = user.getRole() == com.backend.Skytouch.common.enums.UserRole.ADMIN;
+        
+        Job job;
+        if (isAdmin) {
+            job = jobRepository.findById(jobId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
+        } else {
+            job = getOwnedJob(email, jobId);
+        }
+        
         Pageable pageable = PaginationUtils.pageable(page, size, Sort.by(Sort.Direction.DESC, "appliedAt"));
         Page<JobApplication> results = applicationRepository.findByJob_IdOrderByAppliedAtDesc(job.getId(), pageable);
         return PaginationUtils.mapPage(results, applicationMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public ApplicationResponse findApplicationForJob(
+            String email, UUID jobId, UUID applicationId) {
+        var user = com.backend.Skytouch.authentication.security.SecurityUtils.getCurrentUser();
+        boolean isAdmin = user.getRole() == com.backend.Skytouch.common.enums.UserRole.ADMIN;
+        
+        Job job;
+        if (isAdmin) {
+            job = jobRepository.findById(jobId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
+        } else {
+            job = getOwnedJob(email, jobId);
+        }
+        
+        JobApplication application = applicationRepository.findByIdAndJob_Id(applicationId, job.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found: " + applicationId));
+        return applicationMapper.toResponse(application);
     }
 
     @Transactional
@@ -124,7 +170,17 @@ public class ApplicationService {
             UUID jobId,
             UUID applicationId,
             ApplicationStatusUpdateRequest request) {
-        Job job = getOwnedJob(employerEmail, jobId);
+        var user = com.backend.Skytouch.authentication.security.SecurityUtils.getCurrentUser();
+        boolean isAdmin = user.getRole() == com.backend.Skytouch.common.enums.UserRole.ADMIN;
+        
+        Job job;
+        if (isAdmin) {
+            job = jobRepository.findById(jobId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Job not found: " + jobId));
+        } else {
+            job = getOwnedJob(employerEmail, jobId);
+        }
+        
         JobApplication application = applicationRepository.findByIdAndJob_Id(applicationId, job.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found: " + applicationId));
 
@@ -140,7 +196,13 @@ public class ApplicationService {
             throw new BadRequestException("Invalid status for employer update");
         }
 
+        // Require comment for REJECTED status (only for employers, not admins)
+        if (!isAdmin && request.getStatus() == ApplicationStatus.REJECTED && !StringUtils.hasText(request.getComment())) {
+            throw new BadRequestException("Comment is required when rejecting an application");
+        }
+
         application.setStatus(request.getStatus());
+        application.setComment(request.getComment());
         JobApplication saved = applicationRepository.save(application);
         notificationService.notifyOnStatusUpdated(saved);
         return applicationMapper.toResponse(saved);
@@ -180,8 +242,6 @@ public class ApplicationService {
         if (!Boolean.TRUE.equals(user.getEmailVerified()) || user.getStatus() != UserStatus.ACTIVE) {
             throw new BadRequestException("Verify your email before applying to jobs");
         }
-        if (!StringUtils.hasText(jobSeeker.getCvUrl())) {
-            throw new BadRequestException("Upload your CV in onboarding before applying to jobs");
-        }
+        // CV validation is now done at application time with custom CV option
     }
 }

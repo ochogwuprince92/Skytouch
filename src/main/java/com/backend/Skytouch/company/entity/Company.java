@@ -1,6 +1,7 @@
 package com.backend.Skytouch.company.entity;
 
 import com.backend.Skytouch.common.enums.CompanyStatus;
+import com.backend.Skytouch.common.enums.Industry;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -28,7 +29,8 @@ public class Company {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    private String industry;
+    @Enumerated(EnumType.STRING)
+    private Industry industry;
 
     private String website;
 

@@ -33,8 +33,8 @@ public class JobSeekerProfileCompletenessCalculator {
                 .key("career_profile")
                 .label("Add job, qualification, and CV")
                 .complete(profile != null
-                        && StringUtils.hasText(profile.getJob())
-                        && StringUtils.hasText(profile.getQualification())
+                        && profile.getJob() != null
+                        && profile.getQualification() != null
                         && StringUtils.hasText(profile.getCvUrl()))
                 .build());
 
@@ -44,7 +44,7 @@ public class JobSeekerProfileCompletenessCalculator {
                 .complete(profile != null
                         && StringUtils.hasText(profile.getNin())
                         && profile.getBirthday() != null
-                        && StringUtils.hasText(profile.getGender())
+                        && profile.getGender() != null
                         && StringUtils.hasText(profile.getAddressLine()))
                 .build());
 

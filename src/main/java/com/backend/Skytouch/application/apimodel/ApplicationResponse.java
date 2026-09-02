@@ -24,4 +24,5 @@ public class ApplicationResponse {
     private final String cvUrl;
     private final LocalDateTime appliedAt;
     private final LocalDateTime updatedAt;
+    private final String comment;
 }

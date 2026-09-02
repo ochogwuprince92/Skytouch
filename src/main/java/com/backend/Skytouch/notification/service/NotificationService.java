@@ -25,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.UUID;
@@ -76,13 +77,20 @@ public class NotificationService {
         ApplicationStatus status = application.getStatus();
         String statusLabel = formatStatus(status);
 
+        String message = "Your application for \"" + jobTitle + "\" is now " + statusLabel + ".";
+        String comment = application.getComment();
+        
+        if (status == ApplicationStatus.REJECTED && StringUtils.hasText(comment)) {
+            message += "\n\nReason: " + comment;
+        }
+
         saveNotification(
                 seekerUser,
                 NotificationType.APPLICATION_STATUS_UPDATED,
                 "Application status updated",
-                "Your application for \"" + jobTitle + "\" is now " + statusLabel + ".",
+                message,
                 application.getId());
-        emailService.sendApplicationStatusUpdate(seekerUser.getEmail(), jobTitle, statusLabel);
+        emailService.sendApplicationStatusUpdate(seekerUser.getEmail(), jobTitle, statusLabel, comment);
     }
 
     @Transactional
@@ -92,6 +100,7 @@ public class NotificationService {
         Users seekerUser = application.getJobSeeker().getUser();
         String jobTitle = job.getTitle();
         String when = interview.getScheduledAt().toString();
+        String comment = interview.getNotes();
 
         saveNotification(
                 seekerUser,
@@ -99,7 +108,7 @@ public class NotificationService {
                 "Interview scheduled",
                 "Your interview for \"" + jobTitle + "\" is scheduled for " + when + ".",
                 application.getId());
-        emailService.sendInterviewScheduled(seekerUser.getEmail(), jobTitle, when);
+        emailService.sendInterviewScheduled(seekerUser.getEmail(), jobTitle, when, comment);
     }
 
     @Transactional
@@ -143,6 +152,7 @@ public class NotificationService {
         Users seekerUser = application.getJobSeeker().getUser();
         String jobTitle = job.getTitle();
         String companyName = job.getCompany().getName();
+        String comment = offer.getTerms();
 
         saveNotification(
                 seekerUser,
@@ -150,7 +160,7 @@ public class NotificationService {
                 "Job offer received",
                 "You received an offer for \"" + jobTitle + "\" at " + companyName + ".",
                 application.getId());
-        emailService.sendOfferExtended(seekerUser.getEmail(), jobTitle, companyName);
+        emailService.sendOfferExtended(seekerUser.getEmail(), jobTitle, companyName, comment);
     }
 
     @Transactional
@@ -187,6 +197,7 @@ public class NotificationService {
         Job job = application.getJob();
         String jobTitle = job.getTitle();
         String seekerName = application.getSeekerName();
+        String comment = application.getComment();
 
         employerRepository.findByCompany_Id(job.getCompany().getId()).ifPresent(employer -> {
             Users employerUser = employer.getUser();
@@ -196,7 +207,7 @@ public class NotificationService {
                     "Offer declined",
                     seekerName + " declined your offer for \"" + jobTitle + "\".",
                     application.getId());
-            emailService.sendOfferDeclined(employerUser.getEmail(), seekerName, jobTitle);
+            emailService.sendOfferDeclined(employerUser.getEmail(), seekerName, jobTitle, comment);
         });
     }
 

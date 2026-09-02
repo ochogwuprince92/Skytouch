@@ -2395,6 +2395,303 @@
       ]
     },
     {
+      "name": "04p - Subscription",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+        ]
+      },
+      "item": [
+        {
+          "name": "Get Available Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/subscriptions/plans"
+          }
+        },
+        {
+          "name": "Subscribe to Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan\": \"BASIC\",\n  \"billingCycle\": \"MONTHLY\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/subscriptions/subscribe"
+          }
+        },
+        {
+          "name": "Get Current Subscription",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/subscriptions/current"
+          }
+        },
+        {
+          "name": "Get Usage Statistics",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/subscriptions/usage"
+          }
+        },
+        {
+          "name": "Activate Subscription",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/subscriptions/activate"
+          }
+        },
+        {
+          "name": "Renew Subscription",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/subscriptions/renew"
+          }
+        },
+        {
+          "name": "Upgrade Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan\": \"STANDARD\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/subscriptions/upgrade"
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/subscriptions/cancel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04q - Payments",
+      "item": [
+        {
+          "name": "Initialize Payment",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{employerEmail}}\",\n  \"amount\": 20000,\n  \"currency\": \"NGN\",\n  \"callbackUrl\": \"{{baseUrl}}/api/v1/webhooks/paystack\",\n  \"metadata\": {\n    \"userId\": \"{{employerUserId}}\",\n    \"description\": \"Basic Plan Subscription\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/payments/initialize"
+          }
+        },
+        {
+          "name": "Verify Payment",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/payments/verify/{{paymentReference}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04r - Admin Moderation",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          { "key": "token", "value": "{{adminAccessToken}}", "type": "string" }
+        ]
+      },
+      "item": [
+        {
+          "name": "List All Companies",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/companies?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "companies"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Companies by Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/companies?page=0&size=20&status=ACTIVE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "companies"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" },
+                { "key": "status", "value": "ACTIVE" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List All Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Users by Email",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users?page=0&size=20&email={{testEmail}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" },
+                { "key": "email", "value": "{{testEmail}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reject Company",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/admin/companies/{{companyId}}/reject"
+          }
+        },
+        {
+          "name": "Suspend User",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/admin/users/{{userId}}/suspend"
+          }
+        },
+        {
+          "name": "Activate User",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/admin/users/{{userId}}/activate"
+          }
+        },
+        {
+          "name": "Suspend Company",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/admin/companies/{{companyId}}/suspend"
+          }
+        },
+        {
+          "name": "Activate Company",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/admin/companies/{{companyId}}/activate"
+          }
+        },
+        {
+          "name": "List All Jobs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/jobs?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "jobs"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Force Close Job",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/admin/jobs/{{jobId}}/close"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04s - Admin Export",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          { "key": "token", "value": "{{adminAccessToken}}", "type": "string" }
+        ]
+      },
+      "item": [
+        {
+          "name": "Export All Applications",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/export/applications"
+          }
+        },
+        {
+          "name": "Export Applications by Email",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/export/applications?email={{testEmail}}"
+          }
+        },
+        {
+          "name": "Export All Users",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/export/users"
+          }
+        },
+        {
+          "name": "Export Users by Email",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/export/users?email={{testEmail}}"
+          }
+        },
+        {
+          "name": "Export All Companies",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/export/companies"
+          }
+        },
+        {
+          "name": "Export All Jobs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/export/jobs"
+          }
+        }
+      ]
+    },
+    {
       "name": "04c - Admin Dashboard",
       "item": [
         {

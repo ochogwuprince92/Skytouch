@@ -1,6 +1,9 @@
 package com.backend.Skytouch.common.mapper;
 
 import com.backend.Skytouch.authentication.apimodel.RegisterRequest;
+import com.backend.Skytouch.common.enums.Gender;
+import com.backend.Skytouch.common.enums.JobRole;
+import com.backend.Skytouch.common.enums.Qualification;
 import com.backend.Skytouch.common.enums.UserStatus;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerKycRequest;
 import com.backend.Skytouch.jobseeker.apimodel.JobSeekerOnboardingRequest;
@@ -27,10 +30,10 @@ public class JobSeekerMapper {
 
     public void applyOnboarding(JobSeeker profile, JobSeekerOnboardingRequest request, String cvUrl) {
         if (request.getJob() != null) {
-            profile.setJob(request.getJob());
+            profile.setJob(JobRole.valueOf(request.getJob().toUpperCase()));
         }
         if (request.getQualification() != null) {
-            profile.setQualification(request.getQualification());
+            profile.setQualification(Qualification.valueOf(request.getQualification().toUpperCase()));
         }
         if (cvUrl != null) {
             profile.setCvUrl(cvUrl);
@@ -51,7 +54,7 @@ public class JobSeekerMapper {
             profile.setBirthday(request.getBirthday());
         }
         if (request.getGender() != null) {
-            profile.setGender(request.getGender());
+            profile.setGender(Gender.valueOf(request.getGender().toUpperCase()));
         }
         if (request.getAddressNo() != null) {
             profile.setAddressNo(request.getAddressNo());
@@ -82,8 +85,8 @@ public class JobSeekerMapper {
                     .middleName(profile.getMiddleName())
                     .lastName(profile.getLastName())
                     .phone(profile.getPhone())
-                    .job(profile.getJob())
-                    .qualification(profile.getQualification())
+                    .job(profile.getJob() != null ? profile.getJob().name() : null)
+                    .qualification(profile.getQualification() != null ? profile.getQualification().name() : null)
                     .cv(profile.getCvUrl())
                     .about(profile.getAbout())
                     .openToWork(profile.getOpenToWork())
@@ -92,7 +95,7 @@ public class JobSeekerMapper {
                     .addressLine(profile.getAddressLine())
                     .nin(profile.getNin())
                     .birthday(profile.getBirthday())
-                    .gender(profile.getGender())
+                    .gender(profile.getGender() != null ? profile.getGender().name() : null)
                     .addressNo(profile.getAddressNo());
         }
 

@@ -11,13 +11,13 @@ import org.springframework.util.StringUtils;
 @Component
 public class ApplicationMapper {
 
-    public JobApplication toEntity(Job job, JobSeeker jobSeeker, String coverLetter) {
+    public JobApplication toEntity(Job job, JobSeeker jobSeeker, String coverLetter, String cvUrl) {
         return JobApplication.builder()
                 .job(job)
                 .jobSeeker(jobSeeker)
                 .status(ApplicationStatus.SUBMITTED)
                 .coverLetter(coverLetter)
-                .cvUrl(jobSeeker.getCvUrl())
+                .cvUrl(cvUrl)
                 .seekerName(buildSeekerName(jobSeeker))
                 .build();
     }
@@ -37,6 +37,7 @@ public class ApplicationMapper {
                 .status(application.getStatus())
                 .coverLetter(application.getCoverLetter())
                 .cvUrl(application.getCvUrl())
+                .comment(application.getComment())
                 .appliedAt(application.getAppliedAt())
                 .updatedAt(application.getUpdatedAt())
                 .build();

@@ -1,6 +1,5 @@
 package com.backend.Skytouch.application.controller;
 
-import com.backend.Skytouch.application.apimodel.ApplicationCreateRequest;
 import com.backend.Skytouch.application.apimodel.ApplicationResponse;
 import com.backend.Skytouch.application.service.ApplicationService;
 import com.backend.Skytouch.authentication.security.SecurityUtils;

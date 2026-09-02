@@ -21,7 +21,11 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
 
     long countByCompany_IdAndStatus(UUID companyId, JobStatus status);
 
+    int countByCompanyIdAndStatus(UUID companyId, JobStatus status);
+
     long countByStatus(JobStatus status);
+
+    Page<Job> findByStatus(JobStatus status, Pageable pageable);
 
     @Query("""
             SELECT j FROM Job j JOIN j.company c

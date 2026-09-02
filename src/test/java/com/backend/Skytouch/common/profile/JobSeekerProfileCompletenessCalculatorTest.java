@@ -1,5 +1,8 @@
 package com.backend.Skytouch.common.profile;
 
+import com.backend.Skytouch.common.enums.Gender;
+import com.backend.Skytouch.common.enums.JobRole;
+import com.backend.Skytouch.common.enums.Qualification;
 import com.backend.Skytouch.common.enums.UserRole;
 import com.backend.Skytouch.common.enums.UserStatus;
 import com.backend.Skytouch.jobseeker.entity.JobSeeker;
@@ -29,12 +32,12 @@ class JobSeekerProfileCompletenessCalculatorTest {
                 .firstName("Ada")
                 .lastName("Okafor")
                 .phone("+2348012345678")
-                .job("Engineer")
-                .qualification("BSc")
+                .job(JobRole.ENGINEER)
+                .qualification(Qualification.BACHELOR_DEGREE)
                 .cvUrl("https://example.com/cv.pdf")
                 .nin("12345678901")
                 .birthday(LocalDate.of(1995, 6, 15))
-                .gender("Female")
+                .gender(Gender.FEMALE)
                 .addressLine("Allen Avenue, Ikeja")
                 .build();
 

@@ -1,0 +1,5 @@
+ALTER TABLE employer_subscriptions
+    ADD COLUMN IF NOT EXISTS slots_allocated integer NOT NULL DEFAULT 0;
+
+ALTER TABLE employer_subscriptions
+    ADD COLUMN IF NOT EXISTS slots_used integer NOT NULL DEFAULT 0;

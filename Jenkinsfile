@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        CONTAINER_HOST = 'unix:///var/run/podman.sock'
         SPRING_PROFILES_ACTIVE = 'test'
         DATASOURCE_URL = "jdbc:postgresql://postgres-ci:5432/${env.POSTGRES_DB}"
         DATASOURCE_USERNAME = "${env.POSTGRES_USER}"
@@ -11,7 +10,7 @@ pipeline {
         MAIL_USERNAME = "${env.MAIL_USERNAME}"
         MAIL_PASSWORD = "${env.MAIL_PASSWORD}"
         APP_FRONTEND_URL = 'http://localhost:4174'
-        DOCKER_IMAGE = "${env.DOCKER_REGISTRY ?: ''}${env.DOCKER_REGISTRY ? '/' : ''}${env.DOCKER_IMAGE_NAME ?: 'skytouch-app'}"
+        DOCKER_IMAGE = "${env.DOCKER_IMAGE_NAME ?: 'ochogwuprince/skytouch-app'}"
     }
 
     options {
@@ -32,6 +31,28 @@ pipeline {
             }
         }
 
+        stage('Debug') {
+            steps {
+                sh '''
+                echo "========== ENVIRONMENT =========="
+                echo "SPRING_PROFILES_ACTIVE=$SPRING_PROFILES_ACTIVE"
+                echo "POSTGRES_DB=$POSTGRES_DB"
+                echo "POSTGRES_USER=$POSTGRES_USER"
+                echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD"
+                echo "DATASOURCE_URL=$DATASOURCE_URL"
+                echo "DATASOURCE_USERNAME=$DATASOURCE_USERNAME"
+
+                echo ""
+                echo "All POSTGRES variables:"
+                env | grep POSTGRES
+
+                echo ""
+                echo "All DATASOURCE variables:"
+                env | grep DATASOURCE
+            '''
+            }
+        }
+
         stage('Test') {
             steps {
                 sh 'chmod +x mvnw && ./mvnw clean test -B'
@@ -44,44 +65,22 @@ pipeline {
             }
         }
 
-        stage('Build Image') {
-            steps {
-                script {
-                    def tag = "${DOCKER_IMAGE}:${env.BUILD_NUMBER}"
-                    sh "podman build -t ${tag} -t ${DOCKER_IMAGE}:latest ."
-                }
-            }
-        }
-
-        stage('Push Image') {
+        stage('Build & Push Image') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'dev'
-                    expression { env.TAG_NAME?.startsWith('v') }
-                }
+                changeset "src/**"  // ← only build if src files changed
             }
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'docker-registry-credentials',
-                    usernameVariable: 'REGISTRY_USER',
-                    passwordVariable: 'REGISTRY_PASS'
+                        credentialsId: 'docker-registry-credentials',
+                        usernameVariable: 'REGISTRY_USER',
+                        passwordVariable: 'REGISTRY_PASS'
                 )]) {
                     sh '''
-                        if [ -n "$DOCKER_REGISTRY" ]; then
-                          echo "$REGISTRY_PASS" | podman login "$DOCKER_REGISTRY" -u "$REGISTRY_USER" --password-stdin
-                        else
-                          echo "$REGISTRY_PASS" | podman login -u "$REGISTRY_USER" --password-stdin
-                        fi
-                        podman push ${DOCKER_IMAGE}:latest
-                        podman push ${DOCKER_IMAGE}:${BUILD_NUMBER}
+                        docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest .
+                        echo "$REGISTRY_PASS" | docker login -u "$REGISTRY_USER" --password-stdin
+                        docker push ${DOCKER_IMAGE}:latest
+                        docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}
                     '''
-                    script {
-                        if (env.TAG_NAME) {
-                            sh "podman tag ${DOCKER_IMAGE}:latest ${DOCKER_IMAGE}:${env.TAG_NAME}"
-                            sh "podman push ${DOCKER_IMAGE}:${env.TAG_NAME}"
-                        }
-                    }
                 }
             }
         }

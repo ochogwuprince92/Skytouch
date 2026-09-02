@@ -121,6 +121,17 @@ public class JobSeekerService {
         return jobSeekerMapper.toResponse(profile.getUser(), jobSeekerRepository.save(profile));
     }
 
+    @Transactional
+    public String uploadCv(String email, org.springframework.web.multipart.MultipartFile cv) {
+        if (cv == null || cv.isEmpty()) {
+            throw new BadRequestException("CV file is required");
+        }
+        if (!"application/pdf".equalsIgnoreCase(cv.getContentType())) {
+            throw new BadRequestException("Only PDF files are allowed");
+        }
+        return fileStorageService.uploadPdf(cv);
+    }
+
     private JobSeeker getProfileForUser(String email) {
         Users user = userRepository.findByEmailAndRole(email, JOB_SEEKER_ROLE)
                 .orElseThrow(() -> new ResourceNotFoundException("Job seeker not found: " + email));

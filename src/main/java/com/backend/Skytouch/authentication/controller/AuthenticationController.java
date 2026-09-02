@@ -75,4 +75,9 @@ public class AuthenticationController {
         log.info("Logout request");
         return ResponseEntity.ok(authenticationService.logout(authorization.substring(7)));
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<String> health(){
+        return ResponseEntity.ok("App is running");
+    }
 }

@@ -36,7 +36,7 @@ public class JobController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('EMPLOYER')")
+    @PreAuthorize("hasAnyRole('EMPLOYER', 'ADMIN')")
     public JobResponse create(@Valid @RequestBody JobCreateRequest request) {
         return jobService.create(SecurityUtils.getCurrentUser().getEmail(), request);
     }
@@ -63,47 +63,61 @@ public class JobController {
 
     @GetMapping("/{id}")
     public JobResponse getById(@PathVariable UUID id) {
-        var user = SecurityUtils.getCurrentUser();
-        boolean isEmployer = user.getRole() == UserRole.EMPLOYER;
-        boolean isJobSeeker = user.getRole() == UserRole.JOB_SEEKER;
-        return jobService.findById(id, user.getEmail(), isEmployer, isJobSeeker);
+        try {
+            var user = SecurityUtils.getCurrentUser();
+            boolean isEmployer = user.getRole() == UserRole.EMPLOYER;
+            boolean isJobSeeker = user.getRole() == UserRole.JOB_SEEKER;
+            return jobService.findById(id, user.getEmail(), isEmployer, isJobSeeker);
+        } catch (Exception e) {
+            // Allow unauthenticated access to view active jobs
+            return jobService.findByIdPublic(id);
+        }
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('EMPLOYER')")
+    @PreAuthorize("hasAnyRole('EMPLOYER', 'ADMIN')")
     public JobResponse update(@PathVariable UUID id, @Valid @RequestBody JobUpdateRequest request) {
         return jobService.update(SecurityUtils.getCurrentUser().getEmail(), id, request);
     }
 
     @PostMapping("/{id}/publish")
-    @PreAuthorize("hasRole('EMPLOYER')")
+    @PreAuthorize("hasAnyRole('EMPLOYER', 'ADMIN')")
     public JobResponse publish(@PathVariable UUID id) {
         return jobService.publish(SecurityUtils.getCurrentUser().getEmail(), id);
     }
 
     @PostMapping("/{id}/close")
-    @PreAuthorize("hasRole('EMPLOYER')")
+    @PreAuthorize("hasAnyRole('EMPLOYER', 'ADMIN')")
     public JobResponse close(@PathVariable UUID id) {
         return jobService.close(SecurityUtils.getCurrentUser().getEmail(), id);
     }
 
-    @PostMapping("/{id}/applications")
+    @PostMapping(value = "/{id}/applications", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('JOB_SEEKER')")
     public ApplicationResponse apply(
             @PathVariable UUID id,
-            @Valid @RequestBody(required = false) ApplicationCreateRequest request) {
+            @Valid @ModelAttribute ApplicationCreateRequest request) {
         return applicationService.apply(SecurityUtils.getCurrentUser().getEmail(), id, request);
     }
 
     @GetMapping("/{id}/applications")
-    @PreAuthorize("hasRole('EMPLOYER')")
+    @PreAuthorize("hasAnyRole('EMPLOYER', 'ADMIN')")
     public PageResponse<ApplicationResponse> getJobApplications(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return applicationService.findApplicationsForJob(
                 SecurityUtils.getCurrentUser().getEmail(), id, page, size);
+    }
+
+    @GetMapping("/{id}/applications/{applicationId}")
+    @PreAuthorize("hasAnyRole('EMPLOYER', 'ADMIN')")
+    public ApplicationResponse getApplication(
+            @PathVariable UUID id,
+            @PathVariable UUID applicationId) {
+        return applicationService.findApplicationForJob(
+                SecurityUtils.getCurrentUser().getEmail(), id, applicationId);
     }
 
     @GetMapping("/{id}/applications/export")
@@ -119,7 +133,7 @@ public class JobController {
     }
 
     @PatchMapping("/{id}/applications/{applicationId}")
-    @PreAuthorize("hasRole('EMPLOYER')")
+    @PreAuthorize("hasAnyRole('EMPLOYER', 'ADMIN')")
     public ApplicationResponse updateApplicationStatus(
             @PathVariable UUID id,
             @PathVariable UUID applicationId,

@@ -82,7 +82,7 @@ public class JobAlertService {
 
     @Transactional
     public void notifyMatchingSeekers(Job job) {
-        String industry = job.getCompany() != null ? job.getCompany().getIndustry() : null;
+        String industry = job.getCompany() != null && job.getCompany().getIndustry() != null ? job.getCompany().getIndustry().name() : null;
         List<UUID> userIds = jobAlertRepository.findMatchingSeekerUserIds(
                 job.getTitle(),
                 job.getDescription(),
