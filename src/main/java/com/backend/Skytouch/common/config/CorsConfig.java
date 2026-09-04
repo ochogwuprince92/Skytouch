@@ -17,7 +17,9 @@ public class CorsConfig {
         config.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "http://localhost:5173",  // Vite default port
-                "https://skytouchjobs.vercel.app"  // Production frontend
+                "http://localhost:8083",  // Local development
+                "https://skytouchjobs.vercel.app",  // Production frontend
+                "https://skytouchjobs.up.railway.app"  // Production backend
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
