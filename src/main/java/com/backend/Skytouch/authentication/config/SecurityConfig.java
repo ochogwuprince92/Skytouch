@@ -23,7 +23,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties({AuthProperties.class, JwtProperties.class, StorageProperties.class})
+@EnableConfigurationProperties({AuthProperties.class, JwtProperties.class, StorageProperties.class, BrevoProperties.class})
 @RequiredArgsConstructor
 public class SecurityConfig {
 

@@ -8,21 +8,6 @@ spring:
   profiles:
     active: prod
 
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    protocol: ${MAIL_PROTOCOL:smtp}
-    properties:
-      mail:
-        smtp:
-          auth: ${MAIL_SMTP_AUTH:true}
-          starttls:
-            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
-            required: ${MAIL_SMTP_STARTTLS_REQUIRED:true}
-          connectiontimeout: ${MAIL_CONNECTION_TIMEOUT:30000}
-          timeout: ${MAIL_TIMEOUT:30000}
-          writetimeout: ${MAIL_WRITE_TIMEOUT:30000}
-
 springdoc:
   api-docs:
     enabled: true
@@ -36,6 +21,11 @@ springdoc:
   default-produces-media-type: application/json
 
 app:
+  mail:
+    brevo:
+      api-key: ${BREVO_API_KEY}
+      api-url: ${BREVO_API_URL:https://api.brevo.com/v3/smtp/email}
+      sender-name: ${BREVO_SENDER_NAME:SkyTouch}
   jwt:
     secret: ${JWT_SECRET}
   admin:
