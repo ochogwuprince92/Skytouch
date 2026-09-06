@@ -1,20 +1,27 @@
 package com.backend.Skytouch.authentication.service;
 
 import com.backend.Skytouch.authentication.config.AuthProperties;
+import com.backend.Skytouch.authentication.config.BrevoProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private final BrevoProperties brevoProperties;
     private final AuthProperties authProperties;
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public void sendEmailVerificationOtp(String toEmail, String otp) {
         sendOtpEmail(
@@ -170,14 +177,30 @@ public class EmailService {
             return;
         }
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(authProperties.getEmailFrom());
-        message.setTo(toEmail);
-        message.setSubject(subject);
-        message.setText(text);
-
         try {
-            mailSender.send(message);
+            // Build Brevo API payload
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("sender", java.util.Map.of(
+                "name", brevoProperties.getSenderName(),
+                "email", authProperties.getEmailFrom()
+            ));
+            payload.put("to", java.util.List.of(java.util.Map.of("email", toEmail)));
+            payload.put("subject", subject);
+            payload.put("textContent", text);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("api-key", brevoProperties.getApiKey());
+
+            HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+
+            restTemplate.exchange(
+                brevoProperties.getApiUrl(),
+                HttpMethod.POST,
+                entity,
+                String.class
+            );
+
             log.info("Email sent to {} subject={}", toEmail, subject);
         } catch (Exception ex) {
             log.error("Failed to send email to {}", toEmail, ex);
