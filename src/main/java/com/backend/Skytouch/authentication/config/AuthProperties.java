@@ -11,7 +11,7 @@ public class AuthProperties {
 
     private Otp otp = new Otp();
     private Session session = new Session();
-    private String emailFrom = "noreply@skytouch.com";
+    private String emailFrom = "noreply@skyTouch.com";
     private boolean logOtp = false;
     private boolean mailSendEnabled = true;
 

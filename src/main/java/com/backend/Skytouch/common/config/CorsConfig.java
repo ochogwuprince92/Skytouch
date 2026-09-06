@@ -14,12 +14,10 @@ public class CorsConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "http://localhost:5173",  // Vite default port
-                "http://localhost:8083",  // Local development
-                "https://skytouchjobs.vercel.app",  // Production frontend
-                "https://skytouchjobs.up.railway.app"  // Production backend
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",  // Any localhost port
+                "https://skytouchjobs.vercel.app",
+                "https://skytouchjobs.up.railway.app"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));

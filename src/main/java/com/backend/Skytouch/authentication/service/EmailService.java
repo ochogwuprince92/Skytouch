@@ -19,7 +19,7 @@ public class EmailService {
     public void sendEmailVerificationOtp(String toEmail, String otp) {
         sendOtpEmail(
                 toEmail,
-                "Verify your Skytouch email",
+                "Verify your SkyTouch email",
                 "Your email verification code is: " + otp
                         + "\n\nEnter this code to activate your account. It expires in 10 minutes. Do not share it with anyone.");
     }
