@@ -1,5 +1,6 @@
 server:
   port: ${PORT:5000}
+  forward-headers-strategy: native
 
 spring:
   datasource:
@@ -27,6 +28,19 @@ cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    url: /v3/api-docs
+    disable-swagger-default-url: true
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  server-url: https://skytouchjobs.up.railway.app
 
 app:
   jwt:

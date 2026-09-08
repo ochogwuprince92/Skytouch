@@ -16,7 +16,7 @@ target/
 .springBeans
 .sts4-cache
 *.application.yml
-*.application-local.yml
+#*.application-local.yml
 ##uploads
 uploads/jobseekers/cv/
 
