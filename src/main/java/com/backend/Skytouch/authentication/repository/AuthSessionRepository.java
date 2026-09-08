@@ -11,8 +11,6 @@ public interface AuthSessionRepository extends JpaRepository<AuthSession, UUID> 
 
     Optional<AuthSession> findByTokenHash(String tokenHash);
 
-    default Optional<AuthSession> findByTokenHashAndRevokedAtIsNullAndExpiresAtAfter(
-            String tokenHash, LocalDateTime now) {
-        return null;
-    }
+    Optional<AuthSession> findByTokenHashAndRevokedAtIsNullAndExpiresAtAfter(
+            String tokenHash, LocalDateTime now);
 }
