@@ -551,6 +551,43 @@
           }
         },
         {
+          "name": "Upload CV",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns CV URL', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.cvUrl).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "cv", "type": "file", "src": "/path/to/your/cv.pdf" }
+              ]
+            },
+            "url": "{{baseUrl}}/api/job-seekers/me/cv"
+          }
+        },
+        {
           "name": "Update KYC",
           "event": [
             {
@@ -1275,6 +1312,45 @@
               "raw": "{\n  \"status\": \"REVIEWING\"\n}"
             },
             "url": "{{baseUrl}}/api/jobs/{{jobId}}/applications/{{applicationId}}"
+          }
+        },
+        {
+          "name": "Get Application by ID",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{employerAccessToken}}", "type": "string" }
+            ]
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/jobs/{{jobId}}/applications/{{applicationId}}"
+          }
+        },
+        {
+          "name": "Get My Application",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/applications/me/{{applicationId}}"
+          }
+        },
+        {
+          "name": "Withdraw Application",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              { "key": "token", "value": "{{accessToken}}", "type": "string" }
+            ]
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/applications/me/{{applicationId}}/withdraw"
           }
         },
         {
@@ -2505,6 +2581,40 @@
             "method": "GET",
             "url": "{{baseUrl}}/api/v1/payments/verify/{{paymentReference}}"
           }
+        },
+        {
+          "name": "Payment Callback",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/callback?reference={{paymentReference}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "callback"],
+              "query": [
+                { "key": "reference", "value": "{{paymentReference}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04r - Webhooks",
+      "item": [
+        {
+          "name": "Paystack Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-paystack-signature", "value": "{{paystackSignature}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"charge.success\",\n  \"data\": {\n    \"reference\": \"{{paymentReference}}\",\n    \"amount\": 20000,\n    \"customer\": {\n      \"email\": \"{{employerEmail}}\"\n    },\n    \"metadata\": {\n      \"companyId\": \"{{companyId}}\"\n    }\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/webhooks/paystack"
+          }
         }
       ]
     },
@@ -2546,6 +2656,28 @@
                 { "key": "status", "value": "ACTIVE" }
               ]
             }
+          }
+        },
+        {
+          "name": "List Pending Companies",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/companies/pending?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "companies", "pending"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve Company",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/admin/companies/{{companyId}}/approve"
           }
         },
         {
